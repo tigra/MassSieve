@@ -21,6 +21,7 @@ public class FilterSettings implements Serializable {
     private String filterText;
     private boolean useIonIdent, useIndeterminates, usePepProphet, filterPeptides, filterProteins, filterCoverage;
     private int pHitCutoffCount, peptideCutoffCount, coverageCutoffAmount;
+    private double estimatedFdrCutoff;
     /** Creates a new instance of FilterSettings */
     public FilterSettings() {
         omssaCutoff = 0.05;
@@ -36,6 +37,7 @@ public class FilterSettings implements Serializable {
         filterProteins = false;
         pHitCutoffCount = 1;
         peptideCutoffCount = 1;
+        estimatedFdrCutoff = 0.1;
     }
     
     /**
@@ -55,8 +57,21 @@ public class FilterSettings implements Serializable {
         this.setFilterProteins(fromFilter.getFilterProteins());
         this.setPepHitCutoffCount(fromFilter.getPepHitCutoffCount());
         this.setPeptideCutoffCount(fromFilter.getPeptideCutoffCount());
+        this.setEstimatedFdrCutoff(fromFilter.getEstimatedFdrCutoff());
     }
-    
+
+    public double getEstimatedFdrCutoff() {
+        return estimatedFdrCutoff;
+    }
+
+    public void setEstimatedFdrCutoff(double estimatedFdrCutoff) {
+        this.estimatedFdrCutoff = estimatedFdrCutoff;
+    }
+
+    public void setEstimatedFdrCutoff(String estimatedFdrCutoff) {
+        this.estimatedFdrCutoff = Double.valueOf(estimatedFdrCutoff);
+    }
+
     /**
      * Set the OMSSA cutoff expectation score.
      * @param s OMSSA cutoff expectation score
