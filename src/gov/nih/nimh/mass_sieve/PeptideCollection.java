@@ -119,47 +119,12 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
 //    public PeptideCollection getCutoffCollection(double omssa, double mascot, double xtandem) {
 //        return getCutoffCollection(omssa, mascot, xtandem, false);
 //    }
-    public PeptideCollection getCutoffCollection(FilterSettings fs) {
+    public PeptideCollection getCutoffCollection(FilterSettings fs) { // TODO filter by expect cutoff
         PeptideCollection pc = new PeptideCollection();
 
         for (PeptideHit p : peptideHits) {
-            if (fs.getUsePepProphet() && p.isPepXML()) {
-                if (p.getPepProphet() >= fs.getPeptideProphetCutoff()) {
-                    pc.addPeptideHit(p);
-                }
-            } else {
-                switch (p.getSourceType()) {
-                    case MASCOT:
-                        if (fs.getUseIonIdent()) {
-                            if (p.getIonScore() >= p.getIdent()) {
-                                pc.addPeptideHit(p);
-                            }
-                        } else if (p.getExpect() <= fs.getMascotCutoff()) {
-                            pc.addPeptideHit(p);
-                        }
-                        break;
-                    case OMSSA:
-                        if (p.getExpect() <= fs.getOmssaCutoff()) {
-                            pc.addPeptideHit(p);
-                        }
-                        break;
-                    case XTANDEM:
-                        if (p.getExpect() <= fs.getXtandemCutoff()) {
-                            pc.addPeptideHit(p);
-                        }
-                        break;
-                    case SEQUEST:
-                        if (p.getExpect() <= fs.getSequestCutoff()) {
-                            pc.addPeptideHit(p);
-                        }
-                        break;
-                    case PEPXML:
-                        if (!p.CanGetPepProphet() ||
-                                (p.getPepProphet() >= fs.getPeptideProphetCutoff())) {
-                            pc.addPeptideHit(p);
-                        }
-                        break;
-                }
+            if (fs.conformsToFilter(p)) {
+                pc.addPeptideHit(p);
             }
         }
 

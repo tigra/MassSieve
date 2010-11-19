@@ -38,6 +38,7 @@ public class FilterSettingsDialog extends JDialog {
     private int                height = 600;
     private int                spinWidth = 2;
     private JTextField         pepFilterField, mascotCutoff, omssaCutoff, xtandemCutoff, sequestCutoff, peptideProphetCutoff;
+    private JTextField         estimatedFdrCutoff;
     private JCheckBox          useIonIdentBox, useIndeterminatesBox, usePepProphetBox, filterPeptidesBox, filterProteinsBox, filterCoverageBox;
     private JSpinner           pepHitSpinner, peptideSpinner, coverageSpinner;
     private SpinnerNumberModel pepHitCount, peptideCount, coverageAmount;
@@ -45,7 +46,7 @@ public class FilterSettingsDialog extends JDialog {
     private boolean            useIonIdent, useIndeterminates, usePepProphet, filterPeptides, filterProteins, filterCoverage;
     private JLabel             usePepProphetLabel;
     private FilterSettings     filterSettings;
-    
+
     /** Creates a new instance of PreferencesDialog */
     public FilterSettingsDialog(ExperimentPanel exp) {
         super(exp.getParentFrame(),true);
@@ -62,6 +63,7 @@ public class FilterSettingsDialog extends JDialog {
         xtandemCutoff = new JTextField("0.5", 5);
         sequestCutoff = new JTextField("0.0", 5);
         peptideProphetCutoff = new JTextField("0.95", 5);
+        estimatedFdrCutoff = new JTextField("0.66", 5); //todo
         
         useIonIdentBox = new JCheckBox("Use ION >= Ident");
         useIonIdentBox.addItemListener(new java.awt.event.ItemListener() {
@@ -169,6 +171,11 @@ public class FilterSettingsDialog extends JDialog {
         centerPanel.add(new JLabel(">="));
         centerPanel.add(peptideProphetCutoff);
         centerPanel.add(usePepProphetBox);
+
+        centerPanel.add(new JLabel("Estimated FDR cutoff:"), ParagraphLayout.NEW_PARAGRAPH);
+        centerPanel.add(new JLabel(("<=")));
+        centerPanel.add(estimatedFdrCutoff);
+
         usePepProphetLabel = new JLabel("<html>NB: If this score exists for a given peptide hit<p>" +
                                          "then this cutoff takes precedence over the<p>" +
                                          "individual expectation cutoffs.");
@@ -274,6 +281,7 @@ public class FilterSettingsDialog extends JDialog {
         filterSettings.setMascotCutoff(mascotCutoff.getText());
         filterSettings.setSequestCutoff(sequestCutoff.getText());
         filterSettings.setPeptideProphetCutoff(peptideProphetCutoff.getText());
+        filterSettings.setEstimatedFdrCutoff(estimatedFdrCutoff.getText());
         filterSettings.setUseIonIdent(useIonIdent);
         filterSettings.setUsePepProphet(usePepProphet);
         filterSettings.setFilterText(pepFilterField.getText());
@@ -297,6 +305,7 @@ public class FilterSettingsDialog extends JDialog {
         this.setMascotCutoff(filterSettings.getMascotCutoff());
         this.setSequestCutoff(filterSettings.getSequestCutoff());
         this.setPeptideProphetCutoff(filterSettings.getPeptideProphetCutoff());
+        this.setEstimatedFdrCutoff(filterSettings.getEstimatedFdrCutoff());
         this.setUseIonIdent(filterSettings.getUseIonIdent());
         this.setUsePepProphet(filterSettings.getUsePepProphet());
         this.setPepFilterField(filterSettings.getFilterText());
@@ -306,7 +315,11 @@ public class FilterSettingsDialog extends JDialog {
         this.setFilterProteins(filterSettings.getFilterProteins());
         this.setPeptideCount(filterSettings.getPeptideCutoffCount());
     }
-    
+
+    private void setEstimatedFdrCutoff(double expectCutoffValue) {
+        estimatedFdrCutoff.setText(String.valueOf(expectCutoffValue));
+    }
+
     public void setPepFilterField(String s) {
         pepFilterField.setText(s);
     }

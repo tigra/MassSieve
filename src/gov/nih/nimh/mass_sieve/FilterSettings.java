@@ -11,6 +11,8 @@ package gov.nih.nimh.mass_sieve;
 
 import java.io.Serializable;
 
+import static gov.nih.nimh.mass_sieve.io.AnalysisProgramType.*;
+
 /**
  * Stores the filter setting, so they may be passed from dialog to the experiment.
  * Also serialized so they may be saved with the experiments.
@@ -22,6 +24,7 @@ public class FilterSettings implements Serializable {
     private boolean useIonIdent, useIndeterminates, usePepProphet, filterPeptides, filterProteins, filterCoverage;
     private int pHitCutoffCount, peptideCutoffCount, coverageCutoffAmount;
     private double estimatedFdrCutoff;
+
     /** Creates a new instance of FilterSettings */
     public FilterSettings() {
         omssaCutoff = 0.05;
@@ -37,7 +40,7 @@ public class FilterSettings implements Serializable {
         filterProteins = false;
         pHitCutoffCount = 1;
         peptideCutoffCount = 1;
-        estimatedFdrCutoff = 0.1;
+        estimatedFdrCutoff = 0.1; // TODO
     }
     
     /**
@@ -60,18 +63,6 @@ public class FilterSettings implements Serializable {
         this.setEstimatedFdrCutoff(fromFilter.getEstimatedFdrCutoff());
     }
 
-    public double getEstimatedFdrCutoff() {
-        return estimatedFdrCutoff;
-    }
-
-    public void setEstimatedFdrCutoff(double estimatedFdrCutoff) {
-        this.estimatedFdrCutoff = estimatedFdrCutoff;
-    }
-
-    public void setEstimatedFdrCutoff(String estimatedFdrCutoff) {
-        this.estimatedFdrCutoff = Double.valueOf(estimatedFdrCutoff);
-    }
-
     /**
      * Set the OMSSA cutoff expectation score.
      * @param s OMSSA cutoff expectation score
@@ -79,7 +70,8 @@ public class FilterSettings implements Serializable {
     public void setOmssaCutoff(String s) {
         omssaCutoff = Double.parseDouble(s);
     }
-    
+
+
     /**
      * Set the Mascot cutoff expectation score.
      * @param s Mascot cutoff expectation score
@@ -87,6 +79,7 @@ public class FilterSettings implements Serializable {
     public void setMascotCutoff(String s) {
         mascotCutoff = Double.parseDouble(s);
     }
+
     /**
      * Set the X!Tandem cutoff expectation score.
      * @param s X!Tandem cutoff expectation score
@@ -108,7 +101,6 @@ public class FilterSettings implements Serializable {
     public void setPeptideProphetCutoff(String s) {
         peptideProphetCutoff = Double.parseDouble(s);
     }
-    
     /**
      * Set the OMSSA cutoff expectation score.
      * @param d OMSSA cutoff expectation score
@@ -116,6 +108,7 @@ public class FilterSettings implements Serializable {
     public void setOmssaCutoff(double d) {
         omssaCutoff = d;
     }
+
     /**
      * Set the Mascot cutoff expectation score.
      * @param d Mascot cutoff expectation score
@@ -148,7 +141,6 @@ public class FilterSettings implements Serializable {
             mascotCutoff = 0.05;
         }
     }
-    
     /**
      * Sets the string that describes the search engine result set intersection.
      * @param s The search engine result set intersection description string.
@@ -156,6 +148,7 @@ public class FilterSettings implements Serializable {
     public void setFilterText(String s) {
         filterText = s;
     }
+
     /**
      * Retrieves the OMSSA cutoff expectation score.
      * @return The OMSSA cutoff expectation score.
@@ -184,7 +177,6 @@ public class FilterSettings implements Serializable {
     public double getSequestCutoff() {
         return sequestCutoff;
     }
-    
     /**
      * Retrieves the string that describes the search engine result set intersection.
      * @return The string that describes the search engine result set intersection.
@@ -192,7 +184,7 @@ public class FilterSettings implements Serializable {
     public String getFilterText() {
         return filterText;
     }
-    
+
     /**
      * For those who are more comfortable using a cutoff criteria of Ion Score greater than the identity
      * rather than the use the expectation score.  This is equivalent to an expectation cutoff of 0.05
@@ -201,7 +193,7 @@ public class FilterSettings implements Serializable {
     public boolean getUseIonIdent() {
         return useIonIdent;
     }
-    
+
     /**
      * Used to determine if indeterminate peptide hits should be used
      * @param b True if indeterminates should be used, false if not.
@@ -209,7 +201,7 @@ public class FilterSettings implements Serializable {
     public void setUseIndeterminates(boolean b) {
         useIndeterminates = b;
     }
-    
+
     /**
      * Determines if the peptide hit count should be used as a filter
      * @param b True if peptides should be filtered based on number of hits, false otherwise
@@ -217,7 +209,7 @@ public class FilterSettings implements Serializable {
     public void setFilterPeptides(boolean b) {
         filterPeptides = b;
     }
-    
+
     /**
      * Determines if the number of peptides per protein should be used as a filter
      * @param b True if proteins should be filtered based on number of peptides, false otherwise
@@ -225,6 +217,7 @@ public class FilterSettings implements Serializable {
     public void setFilterProteins(boolean b) {
         filterProteins = b;
     }
+
     /**
      * Determines if the percent coverage per protein should be used as a filter
      * @param b True if proteins should be filtered based on peptide coverage, false otherwise
@@ -232,7 +225,6 @@ public class FilterSettings implements Serializable {
     public void setFilterCoverage(boolean b) {
         filterCoverage = b;
     }
-    
     /**
      * Sets the required number of PeptideHits per peptide.
      * @param i the number of PeptideHits.
@@ -240,7 +232,7 @@ public class FilterSettings implements Serializable {
     public void setPepHitCutoffCount(int i) {
         pHitCutoffCount = i;
     }
-    
+
     /**
      * Sets the required number of peptides per protein.
      * @param i the number of Peptides.
@@ -248,6 +240,7 @@ public class FilterSettings implements Serializable {
     public void setPeptideCutoffCount(int i) {
         peptideCutoffCount = i;
     }
+
     /**
      * Sets the required protein coverage.
      * @param i Protein coverage, integer between 0 and 100.
@@ -255,7 +248,6 @@ public class FilterSettings implements Serializable {
     public void setCoverageCutoffAmount(int i) {
         coverageCutoffAmount = i;
     }
-    
     /**
      * Used to determine if indeterminate peptide hits should be used
      * @return True if indeterminates should be used, false if not.
@@ -263,7 +255,7 @@ public class FilterSettings implements Serializable {
     public boolean getUseIndeterminates() {
         return useIndeterminates;
     }
-    
+
     /**
      * Determines if the peptide hit count should be used as a filter
      * @return True if peptides should be filtered based on number of hits, false otherwise
@@ -271,7 +263,7 @@ public class FilterSettings implements Serializable {
     public boolean getFilterPeptides() {
         return filterPeptides;
     }
-    
+
     /**
      * Determines if the number of peptides per protein should be used as a filter
      * @return True if proteins should be filtered based on number of peptides, false otherwise
@@ -279,6 +271,7 @@ public class FilterSettings implements Serializable {
     public boolean getFilterProteins() {
         return filterProteins;
     }
+
     /**
      * Determines if the percent coverage per protein should be used as a filter
      * @return True if proteins should be filtered based on peptide coverage, false otherwise
@@ -286,7 +279,6 @@ public class FilterSettings implements Serializable {
     public boolean getFilterCoverage() {
         return filterCoverage;
     }
-    
     /**
      * Retrieves the required number of PeptideHits per peptide.
      * @return The number of PeptideHits.
@@ -294,7 +286,7 @@ public class FilterSettings implements Serializable {
     public int getPepHitCutoffCount() {
         return pHitCutoffCount;
     }
-    
+
     /**
      * Retrieves the required number of peptides per protein.
      * @return The number of Peptides.
@@ -302,6 +294,7 @@ public class FilterSettings implements Serializable {
     public int getPeptideCutoffCount() {
         return peptideCutoffCount;
     }
+
     /**
      * Retrieves the required protein coverage.
      * @return Protein coverage, integer between 0 and 100.
@@ -309,7 +302,6 @@ public class FilterSettings implements Serializable {
     public int getCoverageCutoffAmount() {
         return coverageCutoffAmount;
     }
-
     public double getPeptideProphetCutoff() {
         return peptideProphetCutoff;
     }
@@ -325,4 +317,88 @@ public class FilterSettings implements Serializable {
     public void setUsePepProphet(boolean b) {
         usePepProphet = b;
     }
+
+    /**
+     * Sets Expect cutoff
+     * @param aExpectCutoff double expect cutoff value to set
+     */
+    private void setEstimatedFdrCutoff(double aExpectCutoff) {
+        estimatedFdrCutoff = aExpectCutoff;
+    }
+
+    /**
+     * Sets Expect cutoff as <code>String</code>
+     * @param text String representation of Expect cutoff
+     */
+    public void setEstimatedFdrCutoff(String text) {
+        estimatedFdrCutoff = Double.valueOf(text);
+    }
+
+    /**
+     * Retrieves Expect cutoff value
+     * @return Expect cutoff value (as <code>double</code>)
+     */
+    public double getEstimatedFdrCutoff() {
+        return estimatedFdrCutoff;
+    }
+
+    /**
+     * Test if a specified peptide conforms to a specified filter
+     * @param peptideHit peptide hit
+     * @return <code>true</code> if peptide hit conforms to filter, <code>false</code> otherwise
+     */
+    boolean conformsToFilter(PeptideHit peptideHit) {
+        if (peptideHit.getEstimatedFDR() > estimatedFdrCutoff) { // added by Alexey Tigarev
+            return false;
+        }
+        if (getUsePepProphet() && peptideHit.isPepXML()) {
+            return peptideHit.getPepProphet() >= peptideProphetCutoff;
+        }
+        switch (peptideHit.getSourceType()) {
+            case MASCOT:
+                if (getUseIonIdent()) {
+                    return peptideHit.getIonScore() >= peptideHit.getIdent();
+                } else {
+                    return peptideHit.getExpect() <= mascotCutoff;
+                }
+            case OMSSA:
+                return peptideHit.getExpect() <= omssaCutoff;
+            case XTANDEM:
+                return peptideHit.getExpect() <= xtandemCutoff;
+            case SEQUEST:
+                return peptideHit.getExpect() <= sequestCutoff;
+            case PEPXML:
+                return !peptideHit.CanGetPepProphet()
+                        || peptideHit.getPepProphet() >= peptideProphetCutoff;
+            case UNKNOWN:
+            default:
+                return false; // TODO ?
+        }
+    }
+
+    public boolean peptideHitConformsToFilter(PeptideHit peptideHit) {
+        if (peptideHit.getEstimatedFDR() > estimatedFdrCutoff) { // added by Alexey Tigarev
+            return false;
+        }
+        if (peptideHit.isPepXML() && (getUsePepProphet() || peptideHit.getSourceType() == PEPXML)) {
+            return !peptideHit.CanGetPepProphet() 
+                     || peptideHit.getPepProphet() >= getPeptideProphetCutoff();
+        }
+        switch (peptideHit.getSourceType()) {
+            case MASCOT:
+                return peptideHit.getExpect() <= mascotCutoff;
+            case OMSSA:
+                return peptideHit.getExpect() <= omssaCutoff;
+            case XTANDEM:
+                return peptideHit.getExpect() <= xtandemCutoff;
+            case SEQUEST:
+                return peptideHit.getExpect() <= sequestCutoff;
+            case PEPXML:
+                /// ?????
+            case UNKNOWN:
+            default:
+                return false;// TODO ?
+        }
+    }
+
 }

@@ -37,6 +37,7 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
     private String sourceFile;
     private String rawFile;
     private String experiment;
+    private double estimatedFDR;
 
     /**
      * Creates a new instance of PeptideHit
@@ -159,30 +160,22 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
         if (obj == null) {
             return false;
         }
-        if (obj instanceof PeptideHit) {
-            PeptideHit p = (PeptideHit) obj;
-            if (p.getSequence().equals(sequence)) {
-                if (p.getScanNum() == scanNum) {
-                    if (p.getQueryNum() == queryNum) {
-                        if (p.getSourceType().equals(sourceType)) {
-                            if (p.getSourceFile().equals(sourceFile)) {
-                                if (p.getExperiment().equals(experiment)) {
-                                    if (p.getCharge() == Z) {
-                                        return true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if (!(obj instanceof PeptideHit)) {
+            return false;
         }
-        return false;
+        PeptideHit p = (PeptideHit) obj;
+        return p.getSequence().equals(sequence)
+                && p.getScanNum() == scanNum
+                && p.getQueryNum() == queryNum
+                && p.getSourceType().equals(sourceType)
+                && p.getSourceFile().equals(sourceFile)
+                && p.getExperiment().equals(experiment)
+                && p.getCharge() == Z;
     }
 
     public int hashCode() {
         return scanNum;
-        //return sequence.hashCode();
+    //return sequence.hashCode();
     }
 
     public void setSequence(String s) {
@@ -382,6 +375,10 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
         return ionScore;
     }
 
+    public double getEstimatedFDR() {
+        return estimatedFDR;
+    }
+
     public void setIonScore(String s) {
         ionScore = Double.parseDouble(s);
     }
@@ -481,5 +478,40 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
 
     public void setPepXML(boolean pepXML) {
         this.pepXML = pepXML;
+    }
+
+    public void setEstimatedFDR(String stringValue) {
+        estimatedFDR = Double.parseDouble(stringValue);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("PeptideHit");
+        sb.append("{diffMass=").append(diffMass);
+        sb.append(", queryNum=").append(queryNum);
+        sb.append(", scanNum=").append(scanNum);
+        sb.append(", expMass=").append(expMass);
+        sb.append(", expNeutralMass=").append(expNeutralMass);
+        sb.append(", theoreticalMass=").append(theoreticalMass);
+        sb.append(", sequence='").append(sequence).append('\'');
+        sb.append(", modSequence='").append(modSequence).append('\'');
+        sb.append(", expect=").append(expect);
+        sb.append(", ionScore=").append(ionScore);
+        sb.append(", ident=").append(ident);
+        sb.append(", xcorr=").append(xcorr);
+        sb.append(", pepProphet=").append(pepProphet);
+        sb.append(", Z=").append(Z);
+        sb.append(", proteinHits=").append(proteinHits);
+        sb.append(", proteinNames=").append(proteinNames);
+        sb.append(", indeterminate=").append(indeterminate);
+        sb.append(", sourceType=").append(sourceType);
+        sb.append(", pepXML=").append(pepXML);
+        sb.append(", sourceFile='").append(sourceFile).append('\'');
+        sb.append(", rawFile='").append(rawFile).append('\'');
+        sb.append(", experiment='").append(experiment).append('\'');
+        sb.append(", estimatedFDR=").append(estimatedFDR);
+        sb.append('}');
+        return sb.toString();
     }
 }
