@@ -7,24 +7,29 @@ package gov.nih.nimh.mass_sieve.gui;
 
 import gov.nih.nimh.mass_sieve.*;
 import gov.nih.nimh.mass_sieve.io.FileInformation;
+import gov.nih.nimh.mass_sieve.logic.ActionResponse;
+import gov.nih.nimh.mass_sieve.logic.ApplicationManager;
+import gov.nih.nimh.mass_sieve.logic.DataStoreException;
+import gov.nih.nimh.mass_sieve.logic.ExperimentManager;
+import gov.nih.nimh.mass_sieve.logic.ExperimentsBundle;
+import gov.nih.nimh.mass_sieve.tasks.MultiTaskListener;
+import gov.nih.nimh.mass_sieve.util.IOUtils;
+import gov.nih.nimh.mass_sieve.util.LogStub;
+import gov.nih.nimh.mass_sieve.util.SystemInfo;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Properties;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
@@ -32,13 +37,11 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
-import javax.swing.ProgressMonitorInputStream;
+import javax.swing.ProgressMonitor;
+import javax.swing.filechooser.FileFilter;
 import org.biojava.bio.BioException;
-import org.biojavax.Namespace;
-import org.biojavax.RichObjectFactory;
 import org.biojavax.bio.db.ncbi.GenpeptRichSequenceDB;
 import org.biojavax.bio.seq.RichSequence;
-import org.biojavax.bio.seq.RichSequenceIterator;
 
 /**
  *
@@ -46,20 +49,30 @@ import org.biojavax.bio.seq.RichSequenceIterator;
  */
 public class MassSieveFrame extends javax.swing.JFrame {
 
+    private ApplicationManager applManager;
+    private ExperimentManager expManager;
+
+    // data fields
     private ExperimentPanel currentExperiment;
     private HashMap<String, ExperimentPanel> expSet;
-    private boolean useDigest, useMultiColumnSort;
+    private boolean useDigest;
     private String digestName;
+
+    // view related fields
     private GraphLayoutType glType;
-    private PreferencesDialog optDialog;
+    private boolean useMultiColumnSort;
+
+    // ui components
     private BatchLoadDialog batchLoadDialog;
-    private static HashMap<String, ProteinInfo> proteinDB;
+    private PreferencesDialog optDialog;
+    private JTabbedPane jTabbedPaneMain;
+    private StatusBar statusBar;
+
+    // file filters
     private MSFileFilter msFilter;
     private MSVFileFilter msvFilter;
     private FastaFileFilter fastaFilter;
     private TextFileFilter txtFilter;
-    private JTabbedPane jTabbedPaneMain;
-    private StatusBar statusBar;
 
     private static class StatusBar extends JLabel {
 
@@ -70,13 +83,16 @@ public class MassSieveFrame extends javax.swing.JFrame {
             setMessage("Ready");
         }
 
-        public void setMessage(String message) {
+        public final void setMessage(String message) {
             setText(" " + message);
         }
     }
 
     /** Creates new form MassSieveFrame */
     public MassSieveFrame() {
+        applManager = new ApplicationManager(); //TODO: init in caller.
+        expManager = new ExperimentManager(); // TODO:
+
         initComponents();
         jTabbedPaneMain = new JTabbedPane();
         this.setSize(1000, 750);
@@ -89,7 +105,6 @@ public class MassSieveFrame extends javax.swing.JFrame {
         });
         statusBar = new StatusBar();
         getContentPane().add(statusBar, BorderLayout.SOUTH);
-        proteinDB = new HashMap<String, ProteinInfo>();
         jFileChooserLoad.setMultiSelectionEnabled(true);
         msFilter = new MSFileFilter();
         msvFilter = new MSVFileFilter();
@@ -125,12 +140,10 @@ public class MassSieveFrame extends javax.swing.JFrame {
         jMenuOpenGenbankDB.setEnabled(false);  // until fully implemented
     }
 
-    public void updateStatusMessage(String message) {
-        long alloc = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024;
-        alloc /= 1024;
+    public final void updateStatusMessage(String message) {
+        long alloc = SystemInfo.getMemoryUsed(SystemInfo.StorageUnit.MegaBytes);
+        long max = SystemInfo.getMemoryMax(SystemInfo.StorageUnit.MegaBytes);
 
-        long max = (Runtime.getRuntime().maxMemory()) / 1024;
-        max /= 1024;
         String mem = "Memory Usage: " + alloc + " of " + max + "MB         ";
 
         statusBar.setMessage(mem + message);
@@ -412,10 +425,10 @@ public class MassSieveFrame extends javax.swing.JFrame {
 
     private void jMenuOpenGenbankDBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuOpenGenbankDBActionPerformed
         GenpeptRichSequenceDB genbank = new GenpeptRichSequenceDB();
-        for (String pName : proteinDB.keySet()) {
+        for (String pName : ProteinDB.Instance.proteinNames()) {
             try {
                 RichSequence seq = genbank.getRichSequence(pName);
-                ProteinInfo pInfo = proteinDB.get(pName);
+                ProteinInfo pInfo = ProteinDB.Instance.get(pName);
                 pInfo.updateFromRichSequence(seq);
                 System.out.println("Updated protein " + pName);
             } catch (BioException ex) {
@@ -433,38 +446,30 @@ public class MassSieveFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_formWindowClosing
 
     private void jMenuSaveExpSetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuSaveExpSetActionPerformed
-        jFileChooserLoad.setFileFilter(msvFilter);
-        int status = jFileChooserLoad.showSaveDialog(this);
-        if (status == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = jFileChooserLoad.getSelectedFile();
-            try {
-                if (!selectedFile.createNewFile()) {
-                    status = JOptionPane.showConfirmDialog(this,
-                            selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
-                            "Overwrite?", JOptionPane.YES_NO_OPTION);
-                    if (status != JOptionPane.OK_OPTION) {
-                        return;
-                    }
-                }
-                FileOutputStream fs = new FileOutputStream(selectedFile);
-                ObjectOutputStream os = new ObjectOutputStream(fs);
-                int tabCount = jTabbedPaneMain.getTabCount();
-                os.writeInt(tabCount);
-                for (int i = 0; i < tabCount; i++) {
-                    ExperimentPanel expPanel = (ExperimentPanel) jTabbedPaneMain.getComponentAt(i);
-                    expPanel.saveExperiment(os);
-                }
-                os.writeObject(proteinDB);
-                os.close();
-            } catch (FileNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to save file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to save file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
+        //FIXME: Inconsistent behaviour: When saving single experiment, "msv" extension automatically added.
+        File selectedFile = chooseFileToCreate(msvFilter, null);
+        if (null == selectedFile) {
+            return;
+        }
+
+        List<Experiment> experiments = new ArrayList<Experiment>();
+        for (Component c : jTabbedPaneMain.getComponents()) {
+            if (c instanceof ExperimentPanel) {
+                Experiment exp = ((ExperimentPanel) c).getPersistentExperiment();
+                experiments.add(exp);
             }
         }
+        saveExperiments(experiments, selectedFile);
     }//GEN-LAST:event_jMenuSaveExpSetActionPerformed
+
+    private void saveExperiments(List<Experiment> experiments, File file) {
+        try {
+            ExperimentsBundle eb = new ExperimentsBundle(experiments, ProteinDB.Instance.getMap());
+            expManager.saveExperimentsBundle(eb, file);
+        } catch (DataStoreException ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     private void jMenuOpenExpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuOpenExpActionPerformed
         jFileChooserLoad.setFileFilter(msvFilter);
@@ -472,123 +477,60 @@ public class MassSieveFrame extends javax.swing.JFrame {
         if (status == JFileChooser.APPROVE_OPTION) {
             File selectedFile = jFileChooserLoad.getSelectedFile();
             try {
-                Object obj;
-                FileInputStream fin = new FileInputStream(selectedFile);
-                ObjectInputStream oin = new ObjectInputStream(fin);
-                int expCount = oin.readInt();
-                if (expCount == 1) {
-                    System.out.println("File contains " + expCount + " experiment");
-                } else {
-                    System.out.println("File contains " + expCount + " experiments");
-                }
-                for (int i = 0; i < expCount; i++) {
-                    obj = oin.readObject();
-                    Experiment exp = (Experiment) obj;
+                ExperimentsBundle eb = expManager.loadExperimentsBundle(selectedFile);
+                List<Experiment> experiments = eb.getExperiments();
+                Map<String, ProteinInfo> proteinInfos = eb.getProteinInfos();
+
+                for (Experiment exp : experiments) {
                     if (this.createExperiment(exp.getName())) {
                         currentExperiment.reloadData(exp);
                     }
                 }
-                obj = oin.readObject();
-                HashMap<String, ProteinInfo> newProteinDB = (HashMap<String, ProteinInfo>) obj;
-                for (ProteinInfo pi : newProteinDB.values()) {
+
+                for (ProteinInfo pi : proteinInfos.values()) {
                     MassSieveFrame.addProtein(pi);
                 }
-            } catch (FileNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to open file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            } catch (ClassNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "File format does not match current MassSieve version", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to open file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
+            } catch (DataStoreException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }//GEN-LAST:event_jMenuOpenExpActionPerformed
 
     private void jMenuSaveExpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuSaveExpActionPerformed
-        jFileChooserLoad.setFileFilter(msvFilter);
-        int status = jFileChooserLoad.showSaveDialog(this);
-        if (status == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = jFileChooserLoad.getSelectedFile();
-            currentExperiment = (ExperimentPanel) jTabbedPaneMain.getSelectedComponent();
-            try {
-                selectedFile = addExtension(selectedFile);
-                if (!selectedFile.createNewFile()) {
-                    status = JOptionPane.showConfirmDialog(this,
-                            selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
-                            "Overwrite?", JOptionPane.YES_NO_OPTION);
-                    if (status != JOptionPane.OK_OPTION) {
-                        return;
-                    }
-                }
-                FileOutputStream fs = new FileOutputStream(selectedFile);
-                ObjectOutputStream os = new ObjectOutputStream(fs);
-                os.writeInt(1);
-                currentExperiment.saveExperiment(os);
-                os.writeObject(proteinDB);
-                os.close();
-            } catch (FileNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to save file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to save file", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            }
+        File selectedFile = chooseFileToCreate(msvFilter, ".msv");
+        if (null == selectedFile) {
+            return;
         }
+
+        Experiment exp = currentExperiment.getPersistentExperiment();
+        saveExperiments(Collections.singletonList(exp), selectedFile);
     }//GEN-LAST:event_jMenuSaveExpActionPerformed
 
-    private File addExtension(File file) throws IOException {
-        if (!file.getCanonicalPath().endsWith(".msv")) {
-            return new File(file.getCanonicalPath() + ".msv");
-        }
-        return file;
-    }
-
     private void jMenuShowSummaryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuShowSummaryActionPerformed
-        currentExperiment = (ExperimentPanel) jTabbedPaneMain.getSelectedComponent();
-        currentExperiment.showSummary();
+        Component comp = jTabbedPaneMain.getSelectedComponent();
+        if (comp instanceof ExperimentPanel) {
+            ((ExperimentPanel) comp).showSummary();
+        }
     }//GEN-LAST:event_jMenuShowSummaryActionPerformed
 
     private void jMenuExportSeqDBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuExportSeqDBActionPerformed
-        jFileChooserLoad.setFileFilter(fastaFilter);
-        int status = jFileChooserLoad.showSaveDialog(this);
-        if (status == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = jFileChooserLoad.getSelectedFile();
-            try {
-                if (!selectedFile.createNewFile()) {
-                    status = JOptionPane.showConfirmDialog(this,
-                            selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
-                            "Overwrite?", JOptionPane.YES_NO_OPTION);
-                    if (status != JOptionPane.OK_OPTION) {
-                        return;
-                    }
-                }
-                System.out.println("Exporting " + selectedFile.getName() + " as a FASTA formated file");
-                FileOutputStream pOut = new FileOutputStream(selectedFile);
-                BufferedOutputStream fos = new BufferedOutputStream(pOut);
-                int seqCount = 0;
-                HashSet<String> minProteins = new HashSet<String>();
-                for (ExperimentPanel exp : expSet.values()) {
-                    minProteins.addAll(exp.getProteins().keySet());
-                }
-                for (String prot : minProteins) {
-                    RichSequence rs = proteinDB.get(prot).getRichSequence();
-                    if (rs != null) {
-                        if (rs.length() > 0) {
-                            RichSequence.IOTools.writeFasta(fos, rs, null);
-                            seqCount++;
-                        }
-                    }
-                }
-                JOptionPane.showMessageDialog(this, "Exported " + seqCount + " sequences.");
-            } catch (FileNotFoundException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to export sequences", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Unable to export sequences", "File Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            }
+        File selectedFile = chooseFileToCreate(fastaFilter, null);
+        if (null == selectedFile) {
+            return;
+        }
+        System.out.println("Exporting " + selectedFile.getName() + " as a FASTA formated file");
+
+        Set<String> minProteins = new HashSet<String>();
+        for (ExperimentPanel exp : expSet.values()) {
+            minProteins.addAll(exp.getProteins().keySet());
+        }
+
+        ActionResponse result = expManager.exportSeqDB(selectedFile, minProteins, 
+                ProteinDB.Instance.getMap());
+        if (result.isFailed()) {
+            JOptionPane.showMessageDialog(this, result.message, "File Error", JOptionPane.ERROR_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, result.message);
         }
     }//GEN-LAST:event_jMenuExportSeqDBActionPerformed
 
@@ -672,13 +614,13 @@ public class MassSieveFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(MassSieveFrame.this, "There is already an experiment named " + name);
             return false;
         } else {
-            ExperimentPanel exp = new ExperimentPanel(this, name);
-            this.createExperiment(exp);
+            this.createExperimentPanel(name);
             return true;
         }
     }
 
-    public void createExperiment(ExperimentPanel expPanel) {
+    public void createExperimentPanel(String name) {
+        ExperimentPanel expPanel = new ExperimentPanel(this, name);
         currentExperiment = expPanel;
         jTabbedPaneMain.add(currentExperiment);
         jTabbedPaneMain.setSelectedComponent(currentExperiment);
@@ -717,87 +659,57 @@ public class MassSieveFrame extends javax.swing.JFrame {
         jMenuExportSeqDB.setEnabled(true);
     }//GEN-LAST:event_jMenuOpenSeqDBActionPerformed
 
-    public void addSeqDBfiles(final File files[]) {
-        new Thread(new Runnable() {
-            /* TODO: use RichSequence.IOTools.readFile to guess format,
-            support more formats, support genbank directly
-             */
+    private void addSeqDBfiles(final File files[]) {
+        MultiTaskListener listener = new MultiTaskListener() {
 
-            public void run() {
-                int seqCount = 0;
-                //int dupCount = 0;
-                for (File f : files) {
-                    System.err.println("Parsing " + f.getName() + " as the sequence database");
-                    setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                    try {
-                        // Not sure if your input is EMBL or Genbank? Load them both here.^M
-                        //Class.forName("org.biojavax.bio.seq.io.EMBLFormat");
-                        //Class.forName("org.biojavax.bio.seq.io.UniProtFormat");
-                        //Class.forName("org.biojavax.bio.seq.io.UniProtXMLFormat");
-                        //Class.forName("org.biojavax.bio.seq.io.GenbankFormat");
-                        Class.forName("org.biojavax.bio.seq.io.FastaFormat");
+            private int tasksNum;
+            private ProgressMonitor mon;
 
-                        // Now let BioJavaX guess which format you actually should use (using the default namespace)
-                        Namespace ns = RichObjectFactory.getDefaultNamespace();
-                        ProgressMonitorInputStream pin = new ProgressMonitorInputStream(MassSieveFrame.this, "Loading " + f.getName(), new FileInputStream(f));
-                        BufferedInputStream bin = new BufferedInputStream(pin);
-                        RichSequenceIterator seqItr = RichSequence.IOTools.readStream(bin, ns);
-                        while (seqItr.hasNext()) {
-                            try {
-                                RichSequence seq = seqItr.nextRichSequence();
-                                String seqName = seq.getName();
-                                //System.out.println(seqName);
-                                if (proteinDB.containsKey(seqName)) {
-                                    ProteinInfo pInfo = proteinDB.get(seqName);
-                                    pInfo.updateFromRichSequence(seq);
-                                    //RichSequence daSeq = proteinDB.get(seqName);
-                                    //if (daSeq != null) {
-                                    //    if (daSeq.getInternalSymbolList() != SymbolList.EMPTY_LIST ) dupCount++;
-                                    //}
-                                    //proteinDB.put(seqName, seq);
-                                    System.err.println(seqName);
-                                    seqCount++;
-                                }
-                            } catch (BioException ex) {
-                                if (ex.getCause() != null) {
-                                    throw ex.getCause();
-                                }
-                                ex.printStackTrace();
-                            }
-                        }
-                        System.err.println(f.getName() + " sequence database read complete!");
-                    } catch (InterruptedIOException ex) {
-                        setCursor(null);
-                        System.err.println("Fasta import canceled by user");
-                        break;
-                    } catch (IOException ex) {
-                        setCursor(null);
-                        ex.printStackTrace();
-                    } catch (ClassNotFoundException ex) {
-                        ex.printStackTrace();
-                    } catch (Throwable ex) {
-                        ex.printStackTrace();
-                    }
-                    setCursor(null);
-                }
-                //jOptionPaneAbout.showMessageDialog(MassSieveFrame.this, "Imported " + seqCount + " sequences, with " + dupCount + " duplicates.");
-                JOptionPane.showMessageDialog(MassSieveFrame.this, "Imported " + seqCount + " sequences");
+            public void onTaskStarted(String taskName, int taskSize) {
+                mon = new ProgressMonitor(MassSieveFrame.this, "Loading " + taskName, "", 0, taskSize);
+                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             }
-        }).start();
+
+            public void onProgress(int taskStep) throws InterruptedIOException {
+                checkMonitorCancelled();
+                mon.setProgress(taskStep);
+            }
+
+            public void onTaskFinished() {
+                tasksNum++;
+                setCursor(null);
+            }
+
+            public void onMultiTaskFinished() {
+                //jOptionPaneAbout.showMessageDialog(MassSieveFrame.this, "Imported " + seqCount + " sequences, with " + dupCount + " duplicates.");
+                JOptionPane.showMessageDialog(MassSieveFrame.this, "Imported " + tasksNum + " sequences");
+            }
+
+            public void onTaskCancelled() {
+                setCursor(null);
+            }
+
+            public void onTaskFailed() {
+                setCursor(null);
+            }
+
+            private void checkMonitorCancelled() throws InterruptedIOException {
+                if (mon.isCanceled()) {
+                    throw new InterruptedIOException("progress");
+                }
+            }
+        };
+        expManager.addSeqDBfiles(files, ProteinDB.Instance.getMap(), listener);
     }
 
     public static void addProtein(ProteinInfo pInfo) {
         String pName = pInfo.getName();
-        if (!proteinDB.containsKey(pName)) {
-            proteinDB.put(pName, pInfo);
+        if (!ProteinDB.Instance.contains(pName)) {
+            ProteinDB.Instance.add(pInfo);
         } else {
-            ProteinInfo pInfoOld = proteinDB.get(pName);
+            ProteinInfo pInfoOld = ProteinDB.Instance.get(pName);
             pInfoOld.update(pInfo);
         }
-    }
-
-    public static ProteinInfo getProtein(String pName) {
-        return proteinDB.get(pName);
     }
 
     private void jMenuCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuCloseActionPerformed
@@ -866,17 +778,22 @@ public class MassSieveFrame extends javax.swing.JFrame {
         if (currentExperiment != null) {
             currentExperiment.saveDockState();
         }
-        System.exit(0);
+        applManager.onQuit();
     }//GEN-LAST:event_jMenuQuitActionPerformed
 
     private void jMenuAboutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuAboutActionPerformed
-        JOptionPane.showMessageDialog(MassSieveFrame.this, this.getTitle()
-                + "\nLNT/NIMH/NIH\nCreated by Douglas J. Slotta\n"
-                + "Mass Spec. proficiency by Melinda A. McFarland\n"
-                + "\n" + checkAllocatedMem()
-                + "\n" + checkAvailMem()
-                + "\n" + checkMaxMem()
-                + "\n\n" + getSystemInfo());
+        String eol = "\n";
+        StringBuilder msg = new StringBuilder(this.getTitle());
+        
+        msg.append("\nLNT/NIMH/NIH\nCreated by Douglas J. Slotta\n");
+        msg.append("Mass Spec. proficiency by Melinda A. McFarland\n");
+        msg.append(eol);
+        msg.append(SystemInfo.checkAllocatedMem()).append(eol);
+        msg.append(SystemInfo.checkAvailMem()).append(eol);
+        msg.append(SystemInfo.checkMaxMem()).append(eol).append(eol);
+        msg.append(SystemInfo.getSystemInfo());
+
+        JOptionPane.showMessageDialog(MassSieveFrame.this, msg.toString());
     }//GEN-LAST:event_jMenuAboutActionPerformed
 
     private void jMenuResetLayoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuResetLayoutActionPerformed
@@ -891,31 +808,18 @@ public class MassSieveFrame extends javax.swing.JFrame {
         Component current = jTabbedPaneMain.getSelectedComponent();
         if (current instanceof ExperimentPanel) {
             currentExperiment = (ExperimentPanel) current;
-            jFileChooserLoad.setFileFilter(txtFilter);
-            jFileChooserLoad.setSelectedFile(new File(currentExperiment.getName() + "_records.txt"));
-            int status = jFileChooserLoad.showSaveDialog(this);
-            if (status == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = jFileChooserLoad.getSelectedFile();
-                try {
-                    if (!selectedFile.createNewFile()) {
-                        status = JOptionPane.showConfirmDialog(this,
-                                selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
-                                "Overwrite?", JOptionPane.YES_NO_OPTION);
-                        if (status != JOptionPane.OK_OPTION) {
-                            return;
-                        }
-                    }
-                    System.out.print("Exporting records into " + selectedFile.getName() + "...");
-                    currentExperiment.exportDatabase(selectedFile);
-                    System.out.println("completed!");
-                } catch (FileNotFoundException ex) {
-                    JOptionPane.showMessageDialog(this, "Unable to export records", "File Error", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(this, "Unable to export records", "File Error", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
-                }
+
+            jFileChooserLoad.setSelectedFile(new File(currentExperiment.getName() + "_results.txt"));
+            File selectedFile = chooseFileToCreate(txtFilter, null);
+            if (null == selectedFile) {
+                return;
             }
+            System.out.print("Exporting records into " + selectedFile.getName() + "...");
+            ActionResponse result = currentExperiment.exportDatabase(selectedFile);
+            if (result.isFailed()) {
+                JOptionPane.showMessageDialog(this, result.message, "File Error", JOptionPane.ERROR_MESSAGE);
+            }
+            System.out.println("completed!");
         }
     }//GEN-LAST:event_jMenuExportDatabaseActionPerformed
 
@@ -924,82 +828,78 @@ public class MassSieveFrame extends javax.swing.JFrame {
         if (current instanceof ExperimentPanel) {
             currentExperiment = (ExperimentPanel) current;
 
-            Object[] options = {
-                "Preferred only",
-                "All proteins"};
-            int n = JOptionPane.showOptionDialog(this,
-                    "From which set of proteins should the results be derived?",
-                    "Select Protein Set",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[0]);
-
-            switch (n) {
-                case 0:
-                    System.out.println("Preferred proteins selected");
-                    break;
-                case 1:
-                    System.out.println("All proteins selected");
-                    break;
-                default:    
-                    return;
-            }
-            jFileChooserLoad.setFileFilter(txtFilter);
+            ExportProteinType proteinType = askForExportProteinType();
             jFileChooserLoad.setSelectedFile(new File(currentExperiment.getName() + "_results.txt"));
-            int status = jFileChooserLoad.showSaveDialog(this);
-            if (status == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = jFileChooserLoad.getSelectedFile();
-                try {
-                    if (!selectedFile.createNewFile()) {
-                        status = JOptionPane.showConfirmDialog(this,
-                                selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
-                                "Overwrite?", JOptionPane.YES_NO_OPTION);
-                        if (status != JOptionPane.OK_OPTION) {
-                            return;
-                        }
-                    }
-                    System.out.print("Exporting results into " + selectedFile.getName() + "...");
-                    currentExperiment.exportResults(selectedFile, n);
-                    System.out.println("completed!");
-                } catch (FileNotFoundException ex) {
-                    JOptionPane.showMessageDialog(this, "Unable to export records", "File Error", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
-                } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(this, "Unable to export records", "File Error", JOptionPane.ERROR_MESSAGE);
-                    ex.printStackTrace();
-                }
+            File selectedFile = chooseFileToCreate(txtFilter, null);
+            if (null == selectedFile) {
+                return;
             }
+            
+            System.out.print("Exporting results into " + selectedFile.getName() + "...");
+            ActionResponse result = currentExperiment.exportResults(selectedFile, proteinType);
+            if (result.isFailed()) {
+                JOptionPane.showMessageDialog(this, result.message, "File Error", JOptionPane.ERROR_MESSAGE);
+            }
+            System.out.println("completed!");
         }
     }//GEN-LAST:event_jMenuExportResultsActionPerformed
 
-    private String getSystemInfo() {
-        Properties p = System.getProperties();
-        return "VM: " + p.getProperty("java.vendor") + " Java " + p.getProperty("java.version")
-                + "\nOS: " + p.getProperty("os.name") + " " + p.getProperty("os.version")
-                + " running on " + p.getProperty("os.arch");
+    /**
+     * Asks user to select type of exported set of proteins.
+     * Available "preferred only" and "All proteins" cases.
+     * @return 0 - for preferred, 1 - for all. //TODO: update
+     */
+    private ExportProteinType askForExportProteinType() {
+        Object[] options = {
+            "Preferred only",
+            "All proteins"};
+        int type = JOptionPane.showOptionDialog(this,
+                "From which set of proteins should the results be derived?",
+                "Select Protein Set",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                options,
+                options[0]);
+
+        switch (type) {
+            case 0:
+                System.out.println("Preferred proteins selected");
+                break;
+            case 1:
+                System.out.println("All proteins selected");
+                break;
+            default:
+                throw new IllegalStateException("Not implemented");
+        }
+
+        return ExportProteinType.parse(type);
     }
 
-    private String checkAllocatedMem() {
-        long val = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024;
-        val /= 1024;
-        String res = "Memory used: " + val + "MB";
-        return res;
-    }
+    private File chooseFileToCreate(FileFilter filter, String extension) {
+        File selectedFile = null;
+        jFileChooserLoad.setFileFilter(filter);
+        int status = jFileChooserLoad.showSaveDialog(this);
 
-    private String checkAvailMem() {
-        long val = (Runtime.getRuntime().totalMemory()) / 1024;
-        val /= 1024;
-        String res = "Current memory available: " + val + "MB";
-        return res;
-    }
+        if (status == JFileChooser.APPROVE_OPTION) {
+            selectedFile = jFileChooserLoad.getSelectedFile();
+            try {
+                selectedFile = IOUtils.ensureHasExtension(selectedFile, extension);
+                if (!selectedFile.createNewFile()) {
+                    status = JOptionPane.showConfirmDialog(this,
+                            selectedFile.getName() + " exists, are you sure you wish to overwrite it?",
+                            "Overwrite?", JOptionPane.YES_NO_OPTION);
+                    if (status != JOptionPane.OK_OPTION) {
+                        return null;
+                    }
+                }
+            }  catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Unable to export records", "File Error", JOptionPane.ERROR_MESSAGE);
+                LogStub.error(ex);
+            }
+        }
 
-    private String checkMaxMem() {
-        long val = (Runtime.getRuntime().maxMemory()) / 1024;
-        val /= 1024;
-        String res = "Max memory Availiable: " + val + "MB";
-        return res;
+        return selectedFile;
     }
 
     public void setUseDigest(boolean b) {

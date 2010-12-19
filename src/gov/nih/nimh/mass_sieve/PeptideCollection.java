@@ -21,10 +21,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import javax.swing.JPopupMenu;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import prefuse.Constants;
 import prefuse.Display;
 import prefuse.Visualization;
@@ -287,162 +286,11 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         }
     }
 
-    public DefaultTreeModel getTree(ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(expPanel.getName() + " Overview");
-        root.add(getPeptideHitsTree(expPanel));
-        root.add(getPeptideTree(expPanel, true));
-        root.add(getProteinTree(expPanel, true));
-        root.add(getClusterTree(expPanel));
-        root.add(getParsimonyTree(expPanel));
-        return new DefaultTreeModel(root);
-    }
-
-    private PeptideProteinNameSet getPeptideProteinNameSet() {
+    public PeptideProteinNameSet getPeptideProteinNameSet() {
         PeptideProteinNameSet pps = new PeptideProteinNameSet();
         pps.setPeptides(minPeptides.keySet());
         pps.setProteins(minProteins.keySet());
         return pps;
-    }
-
-    private DefaultMutableTreeNode getClusterTree(ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(getClusterListPanel(expPanel));
-        DefaultMutableTreeNode child, grandchild;
-
-        // Sort by cluster num
-        ArrayList<Integer> sortClusterNum = new ArrayList<Integer>();
-        sortClusterNum.addAll(clusters.keySet());
-        Collections.sort(sortClusterNum);
-        for (Integer i : sortClusterNum) {
-            PeptideCollection pc = clusters.get(i);
-            child = new DefaultMutableTreeNode(pc);
-            root.add(child);
-            grandchild = pc.getPeptideTree(expPanel, false);
-            child.add(grandchild);
-            grandchild = pc.getProteinTree(expPanel, false);
-            child.add(grandchild);
-        }
-        return root;
-    }
-
-    private DefaultMutableTreeNode getPeptideTree(ExperimentPanel expPanel, boolean useListPanel) {
-        DefaultMutableTreeNode root;
-        if (useListPanel) {
-            root = new DefaultMutableTreeNode(getPeptideListPanel(expPanel));
-        } else {
-            PeptideProteinNameSet pps = getPeptideProteinNameSet();
-            pps.setName("Peptides (" + pps.getPeptides().size() + ")");
-            root = new DefaultMutableTreeNode(pps);
-        }
-        DefaultMutableTreeNode child;
-        ArrayList<Peptide> sortPeptides = new ArrayList<Peptide>();
-        sortPeptides.addAll(minPeptides.values());
-        Collections.sort(sortPeptides);
-        for (Peptide pg : sortPeptides) {
-            //child = pg.getTree();
-            child = new DefaultMutableTreeNode(pg);
-            root.add(child);
-        }
-        return root;
-    }
-
-    private DefaultMutableTreeNode getPeptideHitsTree(ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(getPeptideHitListPanel(expPanel));
-        return root;
-    }
-
-    private DefaultMutableTreeNode getProteinTree(ExperimentPanel expPanel, boolean useListPanel) {
-        DefaultMutableTreeNode root;
-        if (useListPanel) {
-            ProteinListPanel plp = getProteinListPanel(expPanel);
-            root = new DefaultMutableTreeNode(plp);
-        } else {
-            PeptideProteinNameSet pps = getPeptideProteinNameSet();
-            pps.setName("Proteins (" + pps.getProteins().size() + ")");
-            root = new DefaultMutableTreeNode(pps);
-        }
-        DefaultMutableTreeNode child;
-        ArrayList<Protein> sortProteins = new ArrayList<Protein>();
-        sortProteins.addAll(minProteins.values());
-        Collections.sort(sortProteins);
-        for (Protein prot : sortProteins) {
-            //child = prot.getTree(expPanel);
-            child = new DefaultMutableTreeNode(prot);
-            root.add(child);
-        }
-        return root;
-    }
-
-    private DefaultMutableTreeNode getParsimonyTree(ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(getParsimonyListPanel(expPanel));
-        DefaultMutableTreeNode child;
-
-        // Discrete
-        PeptideProteinNameSet pps = ProteinListToPPNSet(getDiscretes());
-        pps.setName("Discrete (" + getDiscretes().size() + ")");
-        child = new DefaultMutableTreeNode(pps);
-        for (Protein p : getDiscretes()) {
-            child.add(new DefaultMutableTreeNode(p));
-        }
-        root.add(child);
-
-        // Differentiable
-        pps = ProteinListToPPNSet(getDifferentiables());
-        pps.setName("Differentiable (" + getDifferentiables().size() + ")");
-        child = new DefaultMutableTreeNode(pps);
-        for (Protein p : getDifferentiables()) {
-            child.add(new DefaultMutableTreeNode(p));
-        }
-        root.add(child);
-
-        // Superset
-        child = ProListToEquivTree(getSupersets(), "Superset");
-        root.add(child);
-
-        // Subsumable
-        child = ProListToEquivTree(getSubsumables(), "Subsumable");
-        root.add(child);
-
-        // Subset
-        child = ProListToEquivTree(getSubsets(), "Subset");
-        root.add(child);
-
-        // Equivalent
-        child = ProListToEquivTree(getEquivalents(), "Equivalent");
-        root.add(child);
-        return root;
-    }
-
-    private DefaultMutableTreeNode ProListToEquivTree(ArrayList<Protein> proList, String name) {
-        DefaultMutableTreeNode root, child;
-        int size = 0;
-        PeptideProteinNameSet pps = ProteinListToPPNSet(proList);
-
-        root = new DefaultMutableTreeNode(pps);
-        HashSet<String> usedProteins = new HashSet<String>();
-        for (Protein p : proList) {
-            if (!usedProteins.contains(p.getName())) {
-                if (p.getEquivalent().size() > 0) {
-                    ArrayList<Protein> equivList = new ArrayList<Protein>();
-                    equivList.add(p);
-                    equivList.addAll(p.getEquivalent());
-                    PeptideProteinNameSet ppsEquiv = ProteinListToPPNSet(equivList);
-                    ppsEquiv.setName(p.getName() + " Group (" + equivList.size() + ")");
-                    child = new DefaultMutableTreeNode(ppsEquiv);
-                    size++;
-                    for (Protein ps : equivList) {
-                        child.add(new DefaultMutableTreeNode(ps));
-                        usedProteins.add(ps.getName());
-                    }
-                    root.add(child);
-                } else {
-                    root.add(new DefaultMutableTreeNode(p));
-                    usedProteins.add(p.getName());
-                    size++;
-                }
-            }
-        }
-        pps.setName(name + " (" + size + ")");
-        return root;
     }
 
     public Display getGraphDisplay(GraphLayoutType glType, final ExperimentPanel expPanel, String highlightName) {
@@ -805,6 +653,13 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         return clusters.get(i);
     }
 
+    /**
+     * @return unmodifiable view of clusters.
+     */
+    public Map<Integer, PeptideCollection> getClusters() {
+        return Collections.unmodifiableMap(clusters);
+    }
+
     public int getNumElements() {
         return minPeptides.size() + minProteins.size();
     }
@@ -889,19 +744,6 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         countables.addAll(differentiables);
         countables.addAll(supersets);
         countables.addAll(equivalents);
-    }
-
-    private PeptideProteinNameSet ProteinListToPPNSet(ArrayList<Protein> proteins) {
-        Set<String> protNames = new HashSet<String>();
-        Set<String> pepNames = new HashSet<String>();
-        for (Protein p : proteins) {
-            protNames.add(p.getName());
-            pepNames.addAll(p.getPeptides());
-        }
-        PeptideProteinNameSet pps = new PeptideProteinNameSet();
-        pps.setPeptides(pepNames);
-        pps.setProteins(protNames);
-        return pps;
     }
 
     public ArrayList<Protein> getEquivalents() {

@@ -11,7 +11,7 @@ package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.io.FileInformation;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class is used to store experiment data for data serialization purposes,
@@ -23,7 +23,7 @@ import java.util.ArrayList;
 public class Experiment implements Serializable {
     private String name;
     private PeptideCollection pepCollection, pepCollectionOriginal;
-    private ArrayList<FileInformation> fileInfos;
+    private List<FileInformation> fileInfos;
     private FilterSettings filterSettings;
     
     /** Creates a new instance of Experiment */
@@ -50,7 +50,7 @@ public class Experiment implements Serializable {
      * Stores the experiment metadata.
      * @return A list of file metadata for each file in the experiment.
      */
-    public ArrayList<FileInformation> getFileInfos() {
+    public List<FileInformation> getFileInfos() {
         return fileInfos;
     }
 
@@ -58,7 +58,7 @@ public class Experiment implements Serializable {
      * Sets the file metadata for this experiment.
      * @param fileInfos The list of metadata for each file in the experiment.
      */
-    public void setFileInfos(ArrayList<FileInformation> fileInfos) {
+    public void setFileInfos(List<FileInformation> fileInfos) {
         this.fileInfos = fileInfos;
     }
 

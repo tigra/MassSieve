@@ -21,9 +21,8 @@ public class sequestSqtHandler extends AnalysisHandler {
     private HashSet<String> minProteins;
     
     /** Creates a new instance of sequestSqtHandler */
-    public sequestSqtHandler(String f, Component p) {
+    public sequestSqtHandler(String f) {
         super(f);
-        parent = p;
         minProteins = new HashSet<String>();
         analysisProgram = AnalysisProgramType.MASCOT;
     }

@@ -108,24 +108,27 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
     }
 
     public String toTabString() {
-        return sequence + "\t"
-                + getModSequence() + "\t"
-                + getSourceType() + "\t"
-                + getScanNum() + "\t"
-                + getQueryNum() + "\t"
-                + getIndeterminate() + "\t"
-                + getExpect() + "\t"
-                + getPepProphet() + "\t"
-                + getIonScore() + "\t"
-                + getIdent() + "\t"
-                + getXcorr() + "\t"
-                + getExpNeutralMass() + "\t"
-                + getExpMass() + "\t"
-                + getDiffMass() + "\t"
-                + getCharge() + "\t"
-                + getExperiment() + "\t"
-                + getSourceFile() + "\t"
-                + getRawFile() + "\n";
+        final String tab = "\t";
+        final String eol = "\n";
+        StringBuilder sb = new StringBuilder(sequence).append(tab);
+        sb.append(getModSequence()).append(tab);
+        sb.append(getSourceType()).append(tab);
+        sb.append(getScanNum()).append(tab);
+        sb.append(getQueryNum()).append(tab);
+        sb.append(getIndeterminate()).append(tab);
+        sb.append(getExpect()).append(tab);
+        sb.append(getPepProphet()).append(tab);
+        sb.append(getIonScore()).append(tab);
+        sb.append(getIdent()).append(tab);
+        sb.append(getXcorr()).append(tab);
+        sb.append(getExpNeutralMass()).append(tab);
+        sb.append(getExpMass()).append(tab);
+        sb.append(getDiffMass()).append(tab);
+        sb.append(getCharge()).append(tab);
+        sb.append(getExperiment()).append(tab);
+        sb.append(getSourceFile()).append(tab);
+        sb.append(getRawFile()).append(eol);
+        return sb.toString();
     }
 
     // This method will return a clone, minus masked proteins

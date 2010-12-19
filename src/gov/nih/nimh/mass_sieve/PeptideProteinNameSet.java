@@ -35,7 +35,7 @@ public class PeptideProteinNameSet {
     }
 
     /**
-     * Stroes the set of petides strings.
+     * Stores the set of peptide strings.
      * @param peptides Set of peptide strings
      */
     public void setPeptides(Set<String> peptides) {

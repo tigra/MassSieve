@@ -11,7 +11,7 @@ package gov.nih.nimh.mass_sieve.gui;
 
 import gov.nih.nimh.mass_sieve.*;
 import java.awt.BorderLayout;
-import java.awt.event.ItemEvent;
+import java.util.List;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -53,16 +53,30 @@ public class PeptideHitPanel extends JPanel {
         //toolbar.add(Box.createHorizontalGlue());
         //toolbar.add(showProteins);
         add(toolbar, BorderLayout.NORTH);
-        tableScrollPane = pep.getJTable(expPanel);
+
+        // create table with peptide hits
+        tableScrollPane = createPeptideHitsTable(ePanel);
         add(tableScrollPane, BorderLayout.CENTER);
+    }
+
+    /**
+     * Returns a table containing a list of all PeptideHits
+     * @param expPanel The current experiment panel
+     * @return A table containing the list of PeptideHits
+     */
+    private JScrollPane createPeptideHitsTable(ExperimentPanel expPanel) {
+        PeptideHitListPanel lp = new PeptideHitListPanel(expPanel);
+        List<PeptideHit> peptideHits = pep.getPeptideHits();
+        lp.addPeptideHitList(peptideHits);
+        return lp.createTable();
     }
     
 //    private void showProteinsStateChanged(java.awt.event.ItemEvent evt) {
 //        if (evt.getStateChange() == ItemEvent.SELECTED) {
 //            //tableScrollPane.setViewportView(pep.getJTableProteins(expPanel));
-//            tableScrollPane.setViewportView(pep.getJTable(expPanel));
+//            tableScrollPane.setViewportView(createPeptideHitsTable(expPanel));
 //        } else {
-//            tableScrollPane.setViewportView(pep.getJTable(expPanel));
+//            tableScrollPane.setViewportView(createPeptideHitsTable(expPanel));
 //        }
 //    }
 }

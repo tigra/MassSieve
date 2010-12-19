@@ -61,7 +61,7 @@ public class PeptideHitListPanel extends ListPanel {
         this.addList(list);
     }
 
-    public void addPeptideHitList(ArrayList<PeptideHit> list) {
+    public void addPeptideHitList(List<PeptideHit> list) {
         TableFormatBuilder builder = new TableFormatBuilder();
 
         builder.addColumns(modSequence, analysis, scan, query, indeterminate, expect, estFDR, pepProphet, ionScore,

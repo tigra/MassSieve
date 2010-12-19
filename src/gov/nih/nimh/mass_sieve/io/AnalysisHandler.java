@@ -46,6 +46,7 @@ abstract public class AnalysisHandler extends DefaultHandler {
         scanExpectIndeterminate = new HashMap<Integer, Boolean>();
     }
 
+    @Override
     public void characters(char chars[], int start, int length) {
         if (collectData) {
             String s = new String(chars, start, length);

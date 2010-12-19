@@ -8,7 +8,6 @@
 package gov.nih.nimh.mass_sieve;
 
 import ca.odell.glazedlists.EventList;
-import gov.nih.nimh.mass_sieve.gui.MassSieveFrame;
 import gov.nih.nimh.mass_sieve.gui.SequencePanel;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -88,6 +87,7 @@ public class Protein implements Serializable, Comparable<Protein> {
         return name.compareToIgnoreCase(p.getName());
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == null) {
             return false;
@@ -99,6 +99,7 @@ public class Protein implements Serializable, Comparable<Protein> {
         return false;
     }
 
+    @Override
     public int hashCode() {
         return name.hashCode();
     }
@@ -144,13 +145,13 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public double getMass() {
         if (mass < 0) {
-            mass = MassSieveFrame.getProtein(this.name).getMass();
+            mass = ProteinDB.Instance.get(this.name).getMass();
             if (mass < 0 && getSeqObj() != null && seqObj.length() > 0) {
                 MassCalc mc = new MassCalc(SymbolPropertyTable.AVG_MASS, false);
                 try {
                     mass = mc.getMass(seqObj);
                     mass = (new BigDecimal(mass)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
-                    MassSieveFrame.getProtein(this.name).setMass(mass);
+                    ProteinDB.Instance.get(this.name).setMass(mass);
                 } catch (IllegalSymbolException ex) {
                     //ex.printStackTrace();
                 } catch (BioException ex) {
@@ -191,7 +192,7 @@ public class Protein implements Serializable, Comparable<Protein> {
         //    return 0;
         //}
         if (length <= 0) {
-            length = MassSieveFrame.getProtein(this.name).getLength();
+            length = ProteinDB.Instance.get(this.name).getLength();
         }
         return length;
     }
@@ -385,7 +386,7 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public String getDescription() {
         if (description == null) {
-            description = MassSieveFrame.getProtein(this.name).getDescription();
+            description = ProteinDB.Instance.get(this.name).getDescription();
             //return "";
         }
         return description;
@@ -403,6 +404,7 @@ public class Protein implements Serializable, Comparable<Protein> {
         cluster = c;
     }
 
+    @Override
     public String toString() {
         return name;
     }
@@ -433,7 +435,7 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public ViewSequence getSeqObj() {
         //if (seqObj == null) {
-        setSeqObj(MassSieveFrame.getProtein(this.name).getRichSequence());
+        setSeqObj(ProteinDB.Instance.get(this.name).getRichSequence());
         //}
         return seqObj;
     }

@@ -16,30 +16,30 @@ import be.proteomics.mascotdatfile.util.mascot.Query;
 import be.proteomics.mascotdatfile.util.mascot.QueryToPeptideMap;
 import be.proteomics.mascotdatfile.util.mascot.iterator.QueryEnumerator;
 import gov.nih.nimh.mass_sieve.*;
-import java.awt.Component;
+import gov.nih.nimh.mass_sieve.tasks.InputStreamObserver;
+import gov.nih.nimh.mass_sieve.tasks.ObserverableInputStream;
+import gov.nih.nimh.mass_sieve.tasks.Task;
+import gov.nih.nimh.mass_sieve.util.IOUtils;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Vector;
-import javax.swing.ProgressMonitor;
-import javax.swing.ProgressMonitorInputStream;
 
 /**
  *
  * @author slotta
  */
 public class mascotDatHandler extends AnalysisHandler {
-    private Component parent;
     private MascotDatfile mdf;
     private HashSet<String> minProteins;
     
     /** Creates a new instance of mascotDatHandler */
-    public mascotDatHandler(String f, Component p) {
+    public mascotDatHandler(String f) {
         super(f);
-        parent = p;
         minProteins = new HashSet<String>();
         analysisProgram = AnalysisProgramType.MASCOT;
     }
@@ -59,83 +59,87 @@ public class mascotDatHandler extends AnalysisHandler {
         //System.out.println("Version: " + version);
         //System.out.println("File: " + file);
     }
-    
-    public void mascotDatParse() {
-        try {
-            ProgressMonitorInputStream pin = new ProgressMonitorInputStream(parent, "Loading " + sourceFile, new FileInputStream(sourceFile));
-            pin.getProgressMonitor().setMillisToDecideToPopup(30);
-            pin.getProgressMonitor().setMillisToPopup(30);
-            InputStreamReader isr = new InputStreamReader(pin);
-            ProgressMonitor progressMonitor = new ProgressMonitor(parent, "Parsing " + sourceFile,"", 0, 3);
-            mdf = new MascotDatfile(new BufferedReader(isr));
-            pin.getProgressMonitor().close();
-            progressMonitor.setMillisToDecideToPopup(30);
-            progressMonitor.setNote("Created MascotDatfile object.");
-            progressMonitor.setProgress(0);
-            progressMonitor.setNote("Getting query to peptide map...");
-            progressMonitor.setProgress(1);
-            QueryToPeptideMap q2pm;
-            q2pm = mdf.getQueryToPeptideMap();
-            progressMonitor.setNote("Getting query list...");
-            progressMonitor.setProgress(2);
-            //Vector AllQueries = mdf.getQueryList();
-            QueryEnumerator qEnum = mdf.getQueryEnumerator();
-            getMetaInfo();
-            //for (int i=0; i<=AllQueries.size(); i++) {
-            while (qEnum.hasMoreElements()) {
-                Query q = (Query)qEnum.nextElement();
-                int i = q.getQueryNumber();
-                int numHits = q2pm.getNumberOfPeptideHits(i);
-                pepHitCount += numHits;
-                if (numHits > 0) {
-                    ArrayList<PeptideHit> subPeptide_hits = new ArrayList<PeptideHit>();
-                    boolean isInderminate = false;
-                    //Query q = (Query) AllQueries.elementAt(i-1);
-                    Vector pephits = q2pm.getAllPeptideHits(i);
-                    be.proteomics.mascotdatfile.util.mascot.PeptideHit ph1 =
-                            (be.proteomics.mascotdatfile.util.mascot.PeptideHit) pephits.elementAt(0);
-                    subPeptide_hits.addAll(mascotPepToPepHitList(ph1, q, i));
-                    double ionsScore = ph1.getIonsScore();
-                    for (int j=1; j < numHits; j++) {
-                        be.proteomics.mascotdatfile.util.mascot.PeptideHit ph2 =
-                                (be.proteomics.mascotdatfile.util.mascot.PeptideHit) pephits.elementAt(j);
-                        if (ionsScore == ph2.getIonsScore()) {
-                            subPeptide_hits.addAll(mascotPepToPepHitList(ph2, q, i));
-                            isInderminate = true;
-                        } else {
-                            break;
-                        }
+
+    public void mascotDatParse(MascotDatfile mdf, Task task) {
+        task.setStep("Created MascotDatfile object.");
+        task.setProgress(0);
+        task.setStep("Getting query to peptide map...");
+        task.setProgress(1);
+
+        QueryToPeptideMap q2pm = mdf.getQueryToPeptideMap();
+
+        task.setStep("Getting query list...");
+        task.setProgress(2);
+
+        //Vector AllQueries = mdf.getQueryList();
+        QueryEnumerator qEnum = mdf.getQueryEnumerator();
+        getMetaInfo();
+        //for (int i=0; i<=AllQueries.size(); i++) {
+        while (qEnum.hasMoreElements()) {
+            Query q = (Query) qEnum.nextElement();
+            int i = q.getQueryNumber();
+            int numHits = q2pm.getNumberOfPeptideHits(i);
+            pepHitCount += numHits;
+            if (numHits > 0) {
+                List<PeptideHit> subPeptide_hits = new ArrayList<PeptideHit>();
+                boolean isInderminate = false;
+                //Query q = (Query) AllQueries.elementAt(i-1);
+                Vector pephits = q2pm.getAllPeptideHits(i);
+                be.proteomics.mascotdatfile.util.mascot.PeptideHit ph1 =
+                        (be.proteomics.mascotdatfile.util.mascot.PeptideHit) pephits.elementAt(0);
+                subPeptide_hits.addAll(mascotPepToPepHitList(ph1, q, i));
+                double ionsScore = ph1.getIonsScore();
+                for (int j = 1; j < numHits; j++) {
+                    be.proteomics.mascotdatfile.util.mascot.PeptideHit ph2 =
+                            (be.proteomics.mascotdatfile.util.mascot.PeptideHit) pephits.elementAt(j);
+                    if (ionsScore == ph2.getIonsScore()) {
+                        subPeptide_hits.addAll(mascotPepToPepHitList(ph2, q, i));
+                        isInderminate = true;
+                    } else {
+                        break;
                     }
-                    if (isInderminate) {
-                        for (PeptideHit p:subPeptide_hits) {
-                            p.setIndeterminate(true);
-                        }
-                    }
-                    peptide_hits.addAll(subPeptide_hits);
                 }
+                if (isInderminate) {
+                    for (PeptideHit p : subPeptide_hits) {
+                        p.setIndeterminate(true);
+                    }
+                }
+                peptide_hits.addAll(subPeptide_hits);
             }
+        }
 
-            progressMonitor.setNote("Done!");
-            progressMonitor.setProgress(3);
-            progressMonitor.close();
+        task.setStep("Done!");
+        task.setProgress(3);
 
-            ProteinMap proMap = mdf.getProteinMap();
-            
-            for (String p:minProteins) {
-                try {
-                    ProteinInfo pInfo = new ProteinInfo(p);
-                    String desc = proMap.getProteinDescription(p);
-                    desc = desc.trim();
-                    pInfo.setDescription(desc);  
-                    pInfo.setMass(proMap.getProteinID(p).getMass());
-                    proteinDB.put(p, pInfo);
-                } catch (IllegalArgumentException ex) {} // Ignore this, why should we care
-            }
+        ProteinMap proMap = mdf.getProteinMap();
+
+        for (String p : minProteins) {
+            try {
+                ProteinInfo pInfo = new ProteinInfo(p);
+                String desc = proMap.getProteinDescription(p);
+                desc = desc.trim();
+                pInfo.setDescription(desc);
+                pInfo.setMass(proMap.getProteinID(p).getMass());
+                proteinDB.put(p, pInfo);
+            } catch (IllegalArgumentException ex) {
+            } // Ignore this, why should we care
+        }
+    }
+
+    public MascotDatfile mascotDatRead(InputStreamObserver streamObserver) {
+        ObserverableInputStream ois = null;
+        try {
+            ois = new ObserverableInputStream(new FileInputStream(sourceFile), streamObserver);
+            InputStreamReader isr = new InputStreamReader(ois);
+            mdf = new MascotDatfile(new BufferedReader(isr));
         } catch (FileNotFoundException ex) {
             ex.printStackTrace();
         } catch (NullPointerException ex) {
-            return;
+            return null;
+        } finally {
+            IOUtils.closeSafe(ois);
         }
+        return mdf;
     }
     
     private ArrayList<PeptideHit> mascotPepToPepHitList(be.proteomics.mascotdatfile.util.mascot.PeptideHit ph, Query q, Integer i) {

@@ -10,6 +10,7 @@ import gov.nih.nimh.mass_sieve.io.FileInformation;
 import java.awt.Dialog;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -17,7 +18,7 @@ import java.util.Collections;
  */
 public class SummaryDialog extends Dialog {
     private ExperimentPanel expPanel;
-    private ArrayList<FileInformation> fileInfos;
+    private List<FileInformation> fileInfos;
     
     /** Creates new form SummaryDialog */
     public SummaryDialog(ExperimentPanel ep) {
@@ -27,7 +28,7 @@ public class SummaryDialog extends Dialog {
         setTitle(expPanel.getName() + " Summary");
     }
     
-    public void setFileInformation(ArrayList<FileInformation> fi) {
+    public void setFileInformation(List<FileInformation> fi) {
         fileInfos = fi;
         Collections.sort(fileInfos);
         StringBuffer sb = new StringBuffer(4096);

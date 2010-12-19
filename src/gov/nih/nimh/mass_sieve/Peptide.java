@@ -7,19 +7,15 @@
  */
 
 package gov.nih.nimh.mass_sieve;
-import gov.nih.nimh.mass_sieve.gui.ExperimentPanel;
-import gov.nih.nimh.mass_sieve.gui.PeptideHitListPanel;
-import gov.nih.nimh.mass_sieve.gui.PeptideHitPanel;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import javax.swing.JScrollPane;
 
 /**
- * Holds all the information pertaining to a given peptide. Including all of its peptide hits
+ * Holds all the information pertaining to a given peptide. Including all of its peptie information pertaining tode hits
  * and proteins it belongs to. A peptide can be viewed as a collection of peptide hits.
  */
 public class Peptide implements Serializable, Comparable<Peptide> {
@@ -278,7 +274,7 @@ public class Peptide implements Serializable, Comparable<Peptide> {
     }
     
     /**
-     * Retrns True if any of the PeptideHits contained by this Peptide were found in generic PepXML, false otherwise.
+     * Returns True if any of the PeptideHits contained by this Peptide were found in generic PepXML, false otherwise.
      * @return True if found by a generic algorithm, false otherwise.
      */
     public boolean containsPepXML() {
@@ -297,7 +293,7 @@ public class Peptide implements Serializable, Comparable<Peptide> {
     
     /**
      * A string-ified version of this peptide for exporting purposes.
-     * @return A CVS string for this peptide
+     * @return A CSV string for this peptide
      */
     public String toCSVString(HashSet<String> exp) {
         StringBuilder pepHitsStr = new StringBuilder();
@@ -371,23 +367,11 @@ public class Peptide implements Serializable, Comparable<Peptide> {
         return theoreticalMass;
     }
     /**
-     * Returns the number of amino acids in this peptides.
+     * Returns the number of amino acids in this peptide.
      * @return The number of amino acids in this peptide.
      */
     public Integer getLength() {
         return sequence.length();
-    }
-    
-    
-    /**
-     * Returns a table containing a list of all PeptideHits
-     * @param ePanel The current experiment panel
-     * @return A table containing the list of PeptideHits
-     */
-    public JScrollPane getJTable(ExperimentPanel ePanel) {
-        PeptideHitListPanel lp = new PeptideHitListPanel(ePanel);
-        lp.addPeptideHitList(peptideHits);
-        return lp.createTable();
     }
     
     /**
@@ -434,7 +418,8 @@ public class Peptide implements Serializable, Comparable<Peptide> {
         }
         return experimentList;
     }
-    
+
+    //TODO: fix comment
     /**
      * Returns the set of file names in a single string suitable for display.
      * @return A list of file names in a single string.
@@ -480,7 +465,7 @@ public class Peptide implements Serializable, Comparable<Peptide> {
     }
     
     /**
-     * The comparitor for sorting purposes.  Sorts in alphabetical order by peptide sequence.
+     * The comparator for sorting purposes.  Sorts in alphabetical order by peptide sequence.
      * @param p a peptide to compare to.
      * @return Same as string comparison for the peptide sequence.
      */

@@ -8,8 +8,6 @@
  */
 package gov.nih.nimh.mass_sieve.gui;
 
-import antlr.RecognitionException;
-import antlr.TokenStreamException;
 import com.javadocking.DockingManager;
 import com.javadocking.component.DefaultSwComponentFactory;
 import com.javadocking.dock.LeafDock;
@@ -22,11 +20,14 @@ import com.javadocking.model.FloatDockModel;
 import com.javadocking.model.codec.DockModelPropertiesDecoder;
 import com.javadocking.model.codec.DockModelPropertiesEncoder;
 import gov.nih.nimh.mass_sieve.*;
-import gov.nih.nimh.mass_sieve.io.AnalysisProgramType;
 import gov.nih.nimh.mass_sieve.io.FileInformation;
-import gov.nih.nimh.mass_sieve.io.ParseFile;
-import gov.nih.nimh.mass_sieve.io.SetLexer;
-import gov.nih.nimh.mass_sieve.io.SetParser;
+import gov.nih.nimh.mass_sieve.logic.ActionResponse;
+import gov.nih.nimh.mass_sieve.logic.ExperimentManager;
+import gov.nih.nimh.mass_sieve.tasks.DeterminedTaskListener;
+import gov.nih.nimh.mass_sieve.tasks.InputStreamObserver;
+import gov.nih.nimh.mass_sieve.tasks.InputStreamProgressObserver;
+import gov.nih.nimh.mass_sieve.tasks.TaskAdapter;
+import gov.nih.nimh.mass_sieve.tasks.TaskListener;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Cursor;
@@ -35,13 +36,10 @@ import java.awt.Toolkit;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.swing.BoxLayout;
@@ -51,6 +49,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTree;
+import javax.swing.ProgressMonitor;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -62,12 +61,10 @@ import prefuse.Display;
  * @author slotta
  */
 public class ExperimentPanel extends JPanel {
-
-    private ArrayList<File> allFiles;
-    private ArrayList<FileInformation> fileInfos;
-    private PeptideCollection pepCollection,  pepCollectionOriginal;
-    private FilterSettings filterSettings;
+    private ExperimentManager expManager;
+    private ExperimentData expData; //FIXME: initialize
     private double omssaCutoffOrig,  mascotCutoffOrig,  xtandemCutoffOrig,  sequestCutoffOrig,  peptideProphetCutoffOrig;
+
     private DefaultTreeModel treeModelOverview;
     private FilterSettingsDialog prefDialog;
     private SummaryDialog summaryDialog;
@@ -76,15 +73,41 @@ public class ExperimentPanel extends JPanel {
     //private JSplitPane jSplitPaneMain;
     private JScrollPane graphPanel,  treePanel;
     private JPanel pepHitPanel,  pepPanel,  proPanel,  detailPanel;
-    private FloatDockModel dockModel;
-    private DefaultDockable pepHitDockable,  pepDockable,  proDockable,  graphDockable,  detailDockable,  treeDockable;
     private JTree jTreeMain;
     private MassSieveFrame msFrame;
+    private Display currentDisplay;
+
+    // docking
+    private DefaultDockable pepHitDockable,  pepDockable,  proDockable,  graphDockable,  detailDockable,  treeDockable;
+    private FloatDockModel dockModel;
+    private SplitDock rootDock;
     private final static String DOCK_NAME = "MassSieve";
     private final static String DOCK_FILE = "MassSieve.dck";
     private final static String ROOT_DOCK = "msRootDock";
-    private SplitDock rootDock;
-    private Display currentDisplay;
+
+    private DeterminedTaskListener createParseListener(final String sourceFile) {
+        DeterminedTaskListener result = new DeterminedTaskListener() {
+            private ProgressMonitor pm;
+            {
+                pm = new ProgressMonitor(ExperimentPanel.this, "Parsing " + sourceFile,"", 0, 3);
+                pm.setMillisToDecideToPopup(30);
+            }
+
+            public void onChangeStepName(String stepName) {
+                pm.setNote(stepName);
+            }
+
+            public void onProgress(int curValue, int totalValue) {
+                pm.setProgress(curValue);
+                pm.setMaximum(totalValue);
+            }
+
+            public void onFinish() {
+                pm.close();
+            }
+        };
+        return result;
+    }
 
     //private String lowerFrameTitle, upperFrameTitle;
     private static class MyComponentFactory extends DefaultSwComponentFactory {
@@ -98,14 +121,15 @@ public class ExperimentPanel extends JPanel {
 
     /** Creates a new instance of ExperimentPanel */
     public ExperimentPanel(MassSieveFrame frm, String name) {
+        expManager = new ExperimentManager();
+        expData = expManager.createNewExperiment(name);
         msFrame = frm;
         this.setName(name);
         initComponents();
         loadDockState();
         jFileChooserLoad.setMultiSelectionEnabled(true);
-        allFiles = new ArrayList<File>();
-        fileInfos = new ArrayList<FileInformation>();
-        filterSettings = new FilterSettings();
+        expData.setFilterSettings(new FilterSettings());
+        FilterSettings filterSettings = expData.getFilterSettings();
         omssaCutoffOrig = filterSettings.getOmssaCutoff();
         mascotCutoffOrig = filterSettings.getMascotCutoff();
         xtandemCutoffOrig = filterSettings.getXtandemCutoff();
@@ -115,7 +139,7 @@ public class ExperimentPanel extends JPanel {
     }
 
     private void cleanDisplay() {
-        pepCollectionOriginal = new PeptideCollection();
+        expData.setPepCollectionOriginal(new PeptideCollection());
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("No data");
         DefaultTreeModel treeModel = new DefaultTreeModel(root);
         jTreeMain.setModel(treeModel);
@@ -263,195 +287,72 @@ public class ExperimentPanel extends JPanel {
         if (summaryDialog == null) {
             summaryDialog = new SummaryDialog(this);
         }
-        summaryDialog.setFileInformation(fileInfos);
+        summaryDialog.setFileInformation(expData.getFileInfos());
         summaryDialog.setVisible(true);
     }
 
-    public void exportDatabase(File file) {
-        try {
-            FileWriter fw = new FileWriter(file);
-            // export proteins
-            fw.write("# Proteins\n");
-            fw.write(Protein.toTabStringHeader());
-            for (Protein pro : pepCollection.getMinProteins().values()) {
-                fw.write(pro.toTabString());
-            }
-            // export peptides
-            fw.write("\n\n# Peptides\n");
-            fw.write(Peptide.toTabStringHeader());
-            for (Peptide pep : pepCollection.getMinPeptides().values()) {
-                fw.write(pep.toTabString());
-            }
-            // export peptide hits
-            fw.write("\n\n# Peptide Hits\n");
-            fw.write(PeptideHit.toTabStringHeader());
-            for (PeptideHit pepHit : pepCollection.getPeptideHits()) {
-                fw.write(pepHit.toTabString());
-            }
-            // export protein-peptide relationships
-            fw.write("\n\n# ProteinToPeptides\n");
-            fw.write("Protein\tPeptide\n");
-            for (Protein pro : pepCollection.getMinProteins().values()) {
-                for (Peptide pep : pro.getAllPeptides()) {
-                    fw.write(pro.getName() + "\t" + pep.getSequence() + "\n");
-                }
-            }
-            // export equivalent proteins
-            fw.write("\n\n# EquivalentProteins\n");
-            fw.write("Protein\tProtein\n");
-            for (Protein pro1 : pepCollection.getMinProteins().values()) {
-                for (Protein pro2 : pro1.getEquivalent()) {
-                    fw.write(pro1.getName() + "\t" + pro2.getName() + "\n");
-                }
-            }
-
-            fw.close();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return;
+    public ActionResponse exportDatabase(File file) {
+        //FIXME: NPE when exporting empty experiment.
+        return expManager.exportDatabase(file, expData.getPepCollection());
     }
 
-    public void exportResults(File file, int setType) {
-        try {
-            FileWriter fw = new FileWriter(file);
-            //	Output column headers if any.
-            if (setType ==0) {
-                fw.write("Proteins\tPeptides\tScans\n");
-            } else {
-                fw.write("Proteins\tParsimony\tPeptides\tScans\n");
-            }
-            for (Protein pro : pepCollection.getMinProteins().values()) {
-                if ((setType == 0) && !pro.isMostEquivalent()) {
-                    continue;  // preferred proteins only
-                }
-                if (setType == 0) {
-                    fw.write(pro.getName());
-                }
-                for (Peptide pep : pro.getAllPeptides()) {
-                    if (setType == 0) {
-                        fw.write("\t" + pep.getSequence() + "\t" + pep.getScanList(false) + "\n");
-                    } else {
-                        fw.write(pro.getName() + "\t" + pro.getParsimonyType() + "\t" + pep.getSequence() + "\t" + pep.getScanList(false) + "\n");
-                    }
-                }
-            }
-            fw.close();
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return;
+    public ActionResponse exportResults(File file, ExportProteinType setType) {
+        return expManager.exportResults(file, expData.getPepCollection(), setType);
     }
 
-    public void saveExperiment(ObjectOutputStream os) {
-        System.out.print("Saving experiment " + this.getName() + "...");
-        Experiment exp = new Experiment();
-        exp.setName(this.getName());
-        exp.setFileInfos(fileInfos);
-        exp.setFilterSettings(filterSettings);
-        exp.setPepCollection(pepCollection);
-        exp.setPepCollectionOriginal(pepCollectionOriginal);
-        try {
-            os.writeObject(exp);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        System.out.println(" done");
+    public Experiment getPersistentExperiment() {
+        return expManager.getPersistentExperiment(expData);
     }
 
     public void reloadData(Experiment exp) {
-        pepCollectionOriginal = exp.getPepCollectionOriginal();
-        pepCollection = exp.getPepCollection();
-        fileInfos = exp.getFileInfos();
-        filterSettings = getFilterSettings();
+        expData.setPepCollectionOriginal(exp.getPepCollectionOriginal());
+        expData.setPepCollection(exp.getPepCollection());
+        expData.setFileInfos(exp.getFileInfos());
+        expData.setFilterSettings(getFilterSettings()); //XXX: not exp.getFilterSettings() ?
         updateDisplay();
     }
 
-    private PeptideCollection FilterBySearchProgram(PeptideCollection pc) {
-        PeptideCollection result;
-        StringReader setDescription = new StringReader(filterSettings.getFilterText());
-        SetLexer lexer = new SetLexer(setDescription);
-        SetParser parser = new SetParser(lexer);
-        parser.setPeptideCollection(pc);
-        try {
-            result = parser.expr();
-            result.updatePeptideHits();
-            return result;
-        } catch (TokenStreamException ex) {
-            ex.printStackTrace();
-        } catch (RecognitionException ex) {
-            ex.printStackTrace();
-        }
-        return new PeptideCollection();
-    }
-
     public void recomputeCutoff() {
-        PeptideCollection pepFiltered;
-        pepFiltered = pepCollectionOriginal.getCutoffCollection(filterSettings);
-        pepFiltered.computeIndeterminates();
-        if (!filterSettings.getUseIndeterminates()) {
-            pepFiltered = pepFiltered.getNonIndeterminents();
-        }
-        pepFiltered = FilterBySearchProgram(pepFiltered);
-        if (filterSettings.getFilterPeptides()) {
-            pepFiltered = pepFiltered.getPeptidesByHits(filterSettings.getPepHitCutoffCount());
-        }
-        // TODO handle additional cutoff filter
-        pepFiltered.createProteinList();
-        if (filterSettings.getFilterProteins()) {
-            pepFiltered = pepFiltered.filterByPeptidePerProtein(filterSettings.getPeptideCutoffCount());
-        }
-        if (filterSettings.getFilterCoverage()) {
-            pepFiltered.updateClusters();
-            pepFiltered = pepFiltered.filterByProteinCoverage(filterSettings.getCoverageCutoffAmount());
-        }
-        pepFiltered.updateClusters();
-        pepCollection = pepFiltered;
-
+        expManager.recomputeCutoff(expData);
         updateDisplay();
     }
 
     public void addFiles(final File files[]) {
-        String exp_name = this.getName();
         for (File f : files) {
-            allFiles.add(f);
-            String filename = f.getName();
-            ParseFile pf = new ParseFile(f, ExperimentPanel.this);
-            Set<String> acceptedProteins = processPeptideCollection(exp_name, filename, pf.getPeptideHits());
-            HashMap<String, ProteinInfo> pDB = pf.getProteinDB();
-            for (String pName : pDB.keySet()) {
-                if (acceptedProteins.contains(pName)) {
-                    MassSieveFrame.addProtein(pDB.get(pName));
+            TaskListener taskListener = new TaskAdapter(ExperimentPanel.this) {
+
+                @Override
+                public void onTaskStarted(String taskName, int taskSize) {
+                    super.onTaskStarted(taskName, taskSize);
+                    mon.setMillisToDecideToPopup(30);
+                    mon.setMillisToPopup(30);
                 }
+
+            };
+            String filename = f.getName();
+            InputStreamObserver inputObserver = new InputStreamProgressObserver(taskListener);
+            taskListener.onTaskStarted(filename, (int)f.length());
+            DeterminedTaskListener parseListener = createParseListener(filename);
+
+            List<ProteinInfo> res = expManager.addFilesToExperiment(expData, f, inputObserver, parseListener);
+            for (ProteinInfo protein : res) {
+                MassSieveFrame.addProtein(protein);
             }
-            FileInformation fInfo = pf.getFileInformation();
-            fInfo.setExperiment(exp_name);
-            fileInfos.add(fInfo);
+
+            taskListener.onTaskFinished();
         }
         recomputeCutoff();
     }
 
-    private Set<String> processPeptideCollection(String exp_name, String filename, final ArrayList<PeptideHit> peptideHits) {
-        HashSet<String> acceptedProteins = new HashSet<String>();
-        for (PeptideHit p : peptideHits) {
-            p.setExperiment(exp_name);
-            p.setSourceFile(filename);
-            if (filterSettings.peptideHitConformsToFilter(p)) {
-                pepCollectionOriginal.addPeptideHit(p);
-                acceptedProteins.addAll(p.getProteinNames());
-            }
-        }
-        return acceptedProteins;
-    }
-
     public void addPeptideHits(ArrayList<PeptideHit> pHits) {
         for (PeptideHit p : pHits) {
-            pepCollectionOriginal.addPeptideHit(p);
+            expData.getPepCollectionOriginal().addPeptideHit(p);
         }
         recomputeCutoff();
     }
 
     public synchronized void reloadFiles() {
+        FilterSettings filterSettings = expData.getFilterSettings();
         if ((filterSettings.getOmssaCutoff() > omssaCutoffOrig) || (filterSettings.getMascotCutoff() > mascotCutoffOrig) ||
                 (filterSettings.getXtandemCutoff() > xtandemCutoffOrig) || (filterSettings.getSequestCutoff() > sequestCutoffOrig) ||
                 (filterSettings.getPeptideProphetCutoff() < peptideProphetCutoffOrig)) {
@@ -476,10 +377,10 @@ public class ExperimentPanel extends JPanel {
 
                 public void run() {
                     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-                    File f[] = new File[allFiles.size()];
-                    allFiles.toArray(f);
-                    allFiles.clear();
-                    fileInfos.clear();
+                    int fileNum = expData.getFilesNumber();
+                    File f[] = new File[fileNum];
+                    expData.getFiles().toArray(f);
+                    expData.clearFiles();
                     addFiles(f);
 
                     setCursor(null);
@@ -496,6 +397,9 @@ public class ExperimentPanel extends JPanel {
         if (node == null) {
             return;
         }
+
+        PeptideCollection pepCollection = expData.getPepCollection();
+
         Object nodeInfo = node.getUserObject();
         if (nodeInfo instanceof String) {
             msFrame.updateStatusMessage(nodeInfo.toString() + " selected");
@@ -649,6 +553,7 @@ public class ExperimentPanel extends JPanel {
     }
 
     public void showPeptideHit(PeptideHit ph) {
+        PeptideCollection pepCollection = expData.getPepCollection();
         Peptide p = pepCollection.getMinPeptides().get(ph.getSequence());
 
         // Update peptide table
@@ -675,6 +580,7 @@ public class ExperimentPanel extends JPanel {
     }
 
     public void showPeptide(Peptide p, boolean updatePepTable) {
+        PeptideCollection pepCollection = expData.getPepCollection();
         if (updatePepTable) {
             // Update peptide table
             PeptideListPanel peptideListPanel = new PeptideListPanel(this);
@@ -704,6 +610,7 @@ public class ExperimentPanel extends JPanel {
     }
 
     public void showProtein(Protein p, boolean updateProTable) {
+        PeptideCollection pepCollection = expData.getPepCollection();
         if (updateProTable) {
             // Update protein table
             ProteinListPanel proteinListPanel = new ProteinListPanel(this);
@@ -738,25 +645,27 @@ public class ExperimentPanel extends JPanel {
     }
 
     public void showCluster(int i) {
-        PeptideCollection pc = pepCollection.getCluster(i);
+        PeptideCollection pc = expData.getPepCollection().getCluster(i);
         updateGraphPanel(pc, null);
     }
 
     private void updateDisplay() {
-        treeModelOverview = pepCollection.getTree(this);
+        //TODO: lazy init
+        ExperimentPanelTreeView treeView = new ExperimentPanelTreeView();
+        treeModelOverview = treeView.getTree(expData.getPepCollection(), this);
         jTreeMain.setModel(treeModelOverview);
         jTreeMain.setSelectionRow(0);
-        System.err.println("PepCollectionOrig: " + pepCollectionOriginal.getPeptideHits().size());
-        System.err.println("PepCollection: " + pepCollection.getPeptideHits().size());
+        System.err.println("PepCollectionOrig: " + expData.getPepCollectionOriginal().getPeptideHits().size());
+        System.err.println("PepCollection: " + expData.getPepCollection().getPeptideHits().size());
     //System.gc();
     }
 
     public HashMap<String, Protein> getProteins() {
-        return pepCollection.getMinProteins();
+        return expData.getPepCollection().getMinProteins();
     }
 
     public PeptideCollection getPepCollection() {
-        return pepCollection;
+        return expData.getPepCollection();
     }
 
     public Frame getParentFrame() {
@@ -768,18 +677,18 @@ public class ExperimentPanel extends JPanel {
     }
 
     public FilterSettings getFilterSettings() {
-        return filterSettings;
+        return expData.getFilterSettings();
     }
 
     public void setFilterSettings(FilterSettings filterSettings) {
-        this.filterSettings = filterSettings;
+        expData.setFilterSettings(filterSettings);
     }
 
-    public ArrayList<FileInformation> getFileInfos() {
-        return fileInfos;
+    public List<FileInformation> getFileInfos() {
+        return expData.getFileInfos();
     }
 
     public void setFileInfos(ArrayList<FileInformation> fileInfos) {
-        this.fileInfos = fileInfos;
+        expData.setFileInfos(fileInfos);
     }
 }
