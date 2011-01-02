@@ -21,6 +21,8 @@ import java.util.List;
  * @author Douglas J. Slotta
  */
 public class Experiment implements Serializable {
+
+    public static final long serialVersionUID = 2L;
     private String name;
     private PeptideCollection pepCollection, pepCollectionOriginal;
     private List<FileInformation> fileInfos;

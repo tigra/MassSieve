@@ -8,7 +8,6 @@
 package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.gui.ExperimentPanel;
-import gov.nih.nimh.mass_sieve.gui.MassSieveFrame;
 import gov.nih.nimh.mass_sieve.gui.PeptideHitListPanel;
 import gov.nih.nimh.mass_sieve.gui.PeptideListPanel;
 import gov.nih.nimh.mass_sieve.gui.ProteinGroupListPanel;
@@ -170,7 +169,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         return pc;
     }
 
-    public void createProteinList() {
+    public void createProteinList(ProteinDB proteinDB) {
         minProteins = new HashMap<String, Protein>();
         for (Peptide pg : minPeptides.values()) {
             String pepName = pg.getSequence();
@@ -180,6 +179,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
                     prot.addPeptide(pepName);
                 } else {
                     Protein prot = new Protein();
+                    prot.setProteinDB(proteinDB);
                     prot.setName(protName);
                     prot.addPeptide(pepName);
                     prot.setCluster(cluster_num);
@@ -192,7 +192,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
             pInfo.setName(p.getName());
             pInfo.setDescription(p.getDescription());
             pInfo.setLength(p.getLength());
-            MassSieveFrame.addProtein(pInfo);
+            proteinDB.add(pInfo);
         }
     }
 
@@ -517,7 +517,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         return g;
     }
 
-    public PeptideCollection filterByPeptidePerProtein(int numPeps) {
+    public PeptideCollection filterByPeptidePerProtein(ProteinDB proteinDB, int numPeps) {
         HashSet<String> proDiscard = new HashSet<String>();
         for (String pName : minProteins.keySet()) {
             Protein p = minProteins.get(pName);
@@ -529,11 +529,11 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         for (PeptideHit ph : peptideHits) {
             new_pc.addPeptideHit(ph.maskProtein(proDiscard));
         }
-        new_pc.createProteinList();
+        new_pc.createProteinList(proteinDB);
         return new_pc;
     }
 
-    public PeptideCollection filterByProteinCoverage(int minCoverage) {
+    public PeptideCollection filterByProteinCoverage(ProteinDB proteinDB, int minCoverage) {
         HashSet<String> proDiscard = new HashSet<String>();
         for (String pName : minProteins.keySet()) {
             Protein p = minProteins.get(pName);
@@ -545,7 +545,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         for (PeptideHit ph : peptideHits) {
             new_pc.addPeptideHit(ph.maskProtein(proDiscard));
         }
-        new_pc.createProteinList();
+        new_pc.createProteinList(proteinDB);
         return new_pc;
     }
 
@@ -676,6 +676,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
         return 0;
     }
 
+    @Override
     public String toString() {
         return "Cluster " + cluster_num + " (" + getNumElements() + ')';
     //return "Cluster " + cluster_num;

@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.logic.ActionResponse;
@@ -12,27 +8,38 @@ import gov.nih.nimh.mass_sieve.tasks.DeterminedTaskListener;
 import gov.nih.nimh.mass_sieve.tasks.InputStreamObserver;
 import gov.nih.nimh.mass_sieve.tasks.InputStreamProgressObserver;
 import gov.nih.nimh.mass_sieve.tasks.TaskListener;
+import gov.nih.nimh.mass_sieve.util.IOUtils;
+import gov.nih.nimh.mass_sieve.util.LogStub;
 import java.io.File;
 import java.util.List;
 
 /**
+ * Simplifies interface of ExperimentManager by eliminating progress listeners.<br>
+ * Class delegates all work to real ExperimentManager with additionally provided
+ * do-nothing progress listeners.
  *
  * @author Alex Turbin (alex.academATgmail.com)
  */
 public class DummyExperimentManager {
-
     private ExperimentManager man;
+    
     private DeterminedTaskListener dtl;
 
     public DummyExperimentManager() {
         man = new ExperimentManager();
 
         dtl = new DeterminedTaskListener() {
+            private int progress;
 
             public void onChangeStepName(String stepName) {
             }
 
             public void onProgress(int curValue, int totalValue) {
+                int curProgress = totalValue / curValue;
+                if (curProgress - progress >= 10 || progress == 0) {
+                    LogStub.trace(curProgress+"%");
+                    progress = curProgress;
+                }
             }
 
             public void onFinish() {
@@ -42,6 +49,7 @@ public class DummyExperimentManager {
 
     public List<ProteinInfo> addFilesToExperiment(ExperimentData expData, File f) {
         TaskListener taskListener = new DummyTaskListener();
+        taskListener.onTaskStarted("Add file "+f.getName(), (int)f.length());
         InputStreamObserver inObserver = new InputStreamProgressObserver(taskListener);
         return man.addFilesToExperiment(expData, f, inObserver, dtl);
     }
@@ -50,7 +58,7 @@ public class DummyExperimentManager {
         return man.createNewExperiment(name);
     }
 
-    public ActionResponse exportResults(File file, PeptideCollection pepCollection, ExportProteinType type)  {
+    public ActionResponse exportResults(File file, PeptideCollection pepCollection, ExportProteinType type) {
         return man.exportResults(file, pepCollection, type);
     }
 
@@ -68,5 +76,13 @@ public class DummyExperimentManager {
 
     public ExperimentsBundle loadExperimentsBundle(File f) throws DataStoreException {
         return man.loadExperimentsBundle(f);
+    }
+
+    public ActionResponse exportDatabase(File file, PeptideCollection pepCollection) {
+        return man.exportDatabase(file, pepCollection);
+    }
+
+    public ProteinDB getProteinDatabase() {
+        return man.getProteinDatabase();
     }
 }

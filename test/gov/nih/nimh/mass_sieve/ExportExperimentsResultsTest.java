@@ -2,7 +2,6 @@ package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.logic.ActionResponse;
 import java.io.File;
-import java.util.List;
 
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -22,7 +21,8 @@ public class ExportExperimentsResultsTest extends TestBase {
         expData = man.createNewExperiment("test");
         expData.setFilterSettings(new FilterSettings());
 
-        importData(man, expData);
+        File[] files = getSeqFiles();
+        importData(files, man, expData);
     }
 
     @Test
@@ -30,7 +30,7 @@ public class ExportExperimentsResultsTest extends TestBase {
         // export
         ExportProteinType type = ExportProteinType.PREFERRED;
         String outFilename = "export_exp_results_preferred.txt";
-        File outFile = new File(TestConstants.OUT_DIR, outFilename);
+        File outFile = new File(TestConstants.DIR_OUT, outFilename);
 
         ActionResponse responce = man.exportResults(outFile, expData.getPepCollection(), type);
 
@@ -44,23 +44,12 @@ public class ExportExperimentsResultsTest extends TestBase {
         // export
         ExportProteinType type = ExportProteinType.ALL;
         String outFilename = "export_exp_results_all.txt";
-        File outFile = new File(TestConstants.OUT_DIR, outFilename);
+        File outFile = new File(TestConstants.DIR_OUT, outFilename);
 
         ActionResponse responce = man.exportResults(outFile, expData.getPepCollection(), type);
 
         // check
         assertTrue("Export results failed", !responce.isFailed());
         assertTrue("Exported file doesn't exist:" + outFile.getAbsolutePath(), outFile.exists());
-    }
-
-    private void importData(DummyExperimentManager man, ExperimentData expData) {
-        File[] files = getSeqFiles();
-        for (File f : files) {
-            List<ProteinInfo> proteinInfos = man.addFilesToExperiment(expData, f);
-            for (ProteinInfo info : proteinInfos) {
-                ProteinDB.Instance.add(info);
-            }
-        }
-        man.recomputeCutoff(expData);
     }
 }

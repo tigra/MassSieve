@@ -31,24 +31,24 @@ public class PersistExperimentTest extends TestBase {
         List<Experiment> experiments = new ArrayList<Experiment>();
         experiments.add(man.getPersistentExperiment(exp1));
         experiments.add(man.getPersistentExperiment(exp2));
-        ExperimentsBundle eb = new ExperimentsBundle(experiments, ProteinDB.Instance.getMap());
+        ExperimentsBundle eb = new ExperimentsBundle(experiments, man.getProteinDatabase());
 
         String outFileName = "save_experiments.bin";
-        File outFile = new File(TestConstants.OUT_DIR, outFileName);
+        File outFile = new File(TestConstants.DIR_OUT, outFileName);
         man.saveExperimentsBundle(eb, outFile);
     }
 
     @Test
     public void testLoadExperiment() throws DataStoreException {
-        File expFile = new File(TestConstants.DATA_DIR, "load_experiments.bin");
+        File expFile = new File(TestConstants.DIR_DATA, "load_experiments.bin");
         assertTrue("Test file must exist: " + expFile.getAbsolutePath(), expFile.exists());
 
         ExperimentsBundle eb = man.loadExperimentsBundle(expFile);
         List<Experiment> experiments = eb.getExperiments();
-        Map<String, ProteinInfo> proteinInfos = eb.getProteinInfos();
+        ProteinDB proteinDB = eb.getProteinDB();
 
         assertTrue("Loaded empty experiments file.", !experiments.isEmpty());
-        assertTrue("Loaded empty protein database.", !proteinInfos.isEmpty());
+        assertTrue("Loaded empty protein database.", !proteinDB.isEmpty());
     }
 
     private ExperimentData createExperiment(String expName) {
@@ -56,12 +56,11 @@ public class PersistExperimentTest extends TestBase {
         ExperimentData expData = man.createNewExperiment(expName);
         expData.setFilterSettings(new FilterSettings());
 
+        //TODO: test MUSTN'T call recomputeCutoff !
         for (File f : files) {
-            List<ProteinInfo> list = man.addFilesToExperiment(expData, f);
-            for (ProteinInfo info : list) {
-                ProteinDB.Instance.add(info);
-            }
+            man.addFilesToExperiment(expData, f);
         }
+        man.recomputeCutoff(expData);
 
         return expData;
     }

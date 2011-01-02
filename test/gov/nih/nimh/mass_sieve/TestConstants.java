@@ -1,15 +1,13 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package gov.nih.nimh.mass_sieve;
 
 /**
  *
- * @author Alex
+ * @author Alex Turbin (alex.academATgmail.com)
  */
 public interface TestConstants {
 
-    public static final String DATA_DIR = "test_data";
-    public static final String OUT_DIR = "test_out";
+    public static final String DIR_DATA = "test_data";
+    public static final String DIR_OUT = "test_out";
+    public static final String DEF_TEST_FILE = "238_sax.cmn.mgf.pep.xml";
+    public static final String DEF_TEST_FILE_2 = "omssa.pep.xml";
 }

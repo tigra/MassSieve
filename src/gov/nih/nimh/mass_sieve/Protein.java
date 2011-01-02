@@ -59,6 +59,8 @@ public class Protein implements Serializable, Comparable<Protein> {
     private int equivalentGroup;
     private boolean mostEquivalent;
 
+    transient private ProteinDB proteinDB;
+
     /** Creates a new instance of Protein */
     public Protein() {
         name = null;
@@ -145,13 +147,13 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public double getMass() {
         if (mass < 0) {
-            mass = ProteinDB.Instance.get(this.name).getMass();
+            mass = proteinDB.get(this.name).getMass();
             if (mass < 0 && getSeqObj() != null && seqObj.length() > 0) {
                 MassCalc mc = new MassCalc(SymbolPropertyTable.AVG_MASS, false);
                 try {
                     mass = mc.getMass(seqObj);
                     mass = (new BigDecimal(mass)).setScale(2, BigDecimal.ROUND_HALF_EVEN).doubleValue();
-                    ProteinDB.Instance.get(this.name).setMass(mass);
+                    proteinDB.get(this.name).setMass(mass);
                 } catch (IllegalSymbolException ex) {
                     //ex.printStackTrace();
                 } catch (BioException ex) {
@@ -192,7 +194,7 @@ public class Protein implements Serializable, Comparable<Protein> {
         //    return 0;
         //}
         if (length <= 0) {
-            length = ProteinDB.Instance.get(this.name).getLength();
+            length = proteinDB.get(this.name).getLength();
         }
         return length;
     }
@@ -386,7 +388,7 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public String getDescription() {
         if (description == null) {
-            description = ProteinDB.Instance.get(this.name).getDescription();
+            description = proteinDB.get(this.name).getDescription();
             //return "";
         }
         return description;
@@ -435,7 +437,7 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public ViewSequence getSeqObj() {
         //if (seqObj == null) {
-        setSeqObj(ProteinDB.Instance.get(this.name).getRichSequence());
+        setSeqObj(proteinDB.get(this.name).getRichSequence());
         //}
         return seqObj;
     }
@@ -733,4 +735,9 @@ public class Protein implements Serializable, Comparable<Protein> {
         }
         return "No preferred found";
     }
+    
+    public void setProteinDB(ProteinDB proteinDB) {
+        this.proteinDB = proteinDB;
+    }
+
 }

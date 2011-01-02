@@ -62,7 +62,7 @@ import prefuse.Display;
  */
 public class ExperimentPanel extends JPanel {
     private ExperimentManager expManager;
-    private ExperimentData expData; //FIXME: initialize
+    private ExperimentData expData;
     private double omssaCutoffOrig,  mascotCutoffOrig,  xtandemCutoffOrig,  sequestCutoffOrig,  peptideProphetCutoffOrig;
 
     private DefaultTreeModel treeModelOverview;
@@ -121,7 +121,7 @@ public class ExperimentPanel extends JPanel {
 
     /** Creates a new instance of ExperimentPanel */
     public ExperimentPanel(MassSieveFrame frm, String name) {
-        expManager = new ExperimentManager();
+        expManager = frm.getManager();
         expData = expManager.createNewExperiment(name);
         msFrame = frm;
         this.setName(name);
@@ -334,10 +334,7 @@ public class ExperimentPanel extends JPanel {
             taskListener.onTaskStarted(filename, (int)f.length());
             DeterminedTaskListener parseListener = createParseListener(filename);
 
-            List<ProteinInfo> res = expManager.addFilesToExperiment(expData, f, inputObserver, parseListener);
-            for (ProteinInfo protein : res) {
-                MassSieveFrame.addProtein(protein);
-            }
+            expManager.addFilesToExperiment(expData, f, inputObserver, parseListener);
 
             taskListener.onTaskFinished();
         }

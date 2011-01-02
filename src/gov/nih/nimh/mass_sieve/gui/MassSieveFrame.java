@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -90,8 +89,8 @@ public class MassSieveFrame extends javax.swing.JFrame {
 
     /** Creates new form MassSieveFrame */
     public MassSieveFrame() {
-        applManager = new ApplicationManager(); //TODO: init in caller.
-        expManager = new ExperimentManager(); // TODO:
+        applManager = new ApplicationManager();
+        expManager = new ExperimentManager();
 
         initComponents();
         jTabbedPaneMain = new JTabbedPane();
@@ -425,10 +424,11 @@ public class MassSieveFrame extends javax.swing.JFrame {
 
     private void jMenuOpenGenbankDBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuOpenGenbankDBActionPerformed
         GenpeptRichSequenceDB genbank = new GenpeptRichSequenceDB();
-        for (String pName : ProteinDB.Instance.proteinNames()) {
+        ProteinDB proteinDB = expManager.getProteinDatabase();
+        for (String pName : proteinDB.proteinNames()) {
             try {
                 RichSequence seq = genbank.getRichSequence(pName);
-                ProteinInfo pInfo = ProteinDB.Instance.get(pName);
+                ProteinInfo pInfo = proteinDB.get(pName);
                 pInfo.updateFromRichSequence(seq);
                 System.out.println("Updated protein " + pName);
             } catch (BioException ex) {
@@ -464,7 +464,9 @@ public class MassSieveFrame extends javax.swing.JFrame {
 
     private void saveExperiments(List<Experiment> experiments, File file) {
         try {
-            ExperimentsBundle eb = new ExperimentsBundle(experiments, ProteinDB.Instance.getMap());
+            //FIXME: move all to controller
+            ProteinDB proteinDB = expManager.getProteinDatabase();
+            ExperimentsBundle eb = new ExperimentsBundle(experiments, proteinDB);
             expManager.saveExperimentsBundle(eb, file);
         } catch (DataStoreException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
@@ -479,16 +481,11 @@ public class MassSieveFrame extends javax.swing.JFrame {
             try {
                 ExperimentsBundle eb = expManager.loadExperimentsBundle(selectedFile);
                 List<Experiment> experiments = eb.getExperiments();
-                Map<String, ProteinInfo> proteinInfos = eb.getProteinInfos();
 
                 for (Experiment exp : experiments) {
                     if (this.createExperiment(exp.getName())) {
                         currentExperiment.reloadData(exp);
                     }
-                }
-
-                for (ProteinInfo pi : proteinInfos.values()) {
-                    MassSieveFrame.addProtein(pi);
                 }
             } catch (DataStoreException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "File Error", JOptionPane.ERROR_MESSAGE);
@@ -525,8 +522,7 @@ public class MassSieveFrame extends javax.swing.JFrame {
             minProteins.addAll(exp.getProteins().keySet());
         }
 
-        ActionResponse result = expManager.exportSeqDB(selectedFile, minProteins, 
-                ProteinDB.Instance.getMap());
+        ActionResponse result = expManager.exportSeqDB(selectedFile, minProteins);
         if (result.isFailed()) {
             JOptionPane.showMessageDialog(this, result.message, "File Error", JOptionPane.ERROR_MESSAGE);
         } else {
@@ -699,17 +695,7 @@ public class MassSieveFrame extends javax.swing.JFrame {
                 }
             }
         };
-        expManager.addSeqDBfiles(files, ProteinDB.Instance.getMap(), listener);
-    }
-
-    public static void addProtein(ProteinInfo pInfo) {
-        String pName = pInfo.getName();
-        if (!ProteinDB.Instance.contains(pName)) {
-            ProteinDB.Instance.add(pInfo);
-        } else {
-            ProteinInfo pInfoOld = ProteinDB.Instance.get(pName);
-            pInfoOld.update(pInfo);
-        }
+        expManager.addSeqDBfiles(files, listener);
     }
 
     private void jMenuCloseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuCloseActionPerformed
@@ -847,7 +833,7 @@ public class MassSieveFrame extends javax.swing.JFrame {
     /**
      * Asks user to select type of exported set of proteins.
      * Available "preferred only" and "All proteins" cases.
-     * @return 0 - for preferred, 1 - for all. //TODO: update
+     * @return export protein type
      */
     private ExportProteinType askForExportProteinType() {
         Object[] options = {
@@ -932,6 +918,10 @@ public class MassSieveFrame extends javax.swing.JFrame {
 
     public GraphLayoutType getGraphLayout() {
         return glType;
+    }
+
+    public ExperimentManager getManager() {
+        return expManager;
     }
 
     /**

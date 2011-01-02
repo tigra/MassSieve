@@ -9,6 +9,11 @@ package gov.nih.nimh.mass_sieve.util;
 public class LogStub {
 
     private static final String DEBUG_MARKER = "[DEBUG] ";
+    private static final String TRACE_MARKER = "[TRACE] ";
+
+    public static void trace(Object param) {
+        System.out.printf("%s%s\n", TRACE_MARKER, param);
+    }
 
     private LogStub() {
     }

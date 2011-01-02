@@ -1,12 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package gov.nih.nimh.mass_sieve;
 
 /**
+ * Type of proteins to be exported.
+ * There could be exported all proteins or only preferred ones.
  *
- * @author Alex
+ * @author Alex Turbin (alex.academATgmail.com)
  */
 public enum ExportProteinType {
 

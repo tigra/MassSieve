@@ -1,14 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package gov.nih.nimh.mass_sieve;
 
+import java.util.Map;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
@@ -17,14 +13,39 @@ import static org.junit.Assert.*;
  */
 public class TestBase {
 
-    protected File[] getSeqFiles() {
+    /**
+     * For each required file creates corresponding File object. 
+     * If no required files provided, returns default test file. <br/>
+     * Each of required files must exist.
+     */
+    protected File[] getSeqFiles(String... requiredFiles) {
         List<File> result = new ArrayList<File>();
-        File f = new File(TestConstants.DATA_DIR, "238_sax.cmn.mgf.pep.xml");
-        if (!f.exists()) {
-            fail("File doesn't exist:" + f.getAbsolutePath());
+
+        // add files to a list
+        if (null == requiredFiles || requiredFiles.length == 0) {
+            result.add(new File(TestConstants.DIR_DATA, TestConstants.DEF_TEST_FILE));
+        } else {
+            for (String requiredFile : requiredFiles) {
+                result.add(new File(TestConstants.DIR_DATA, requiredFile));
+            }
         }
 
-        result.add(f);
+        // check if required files exists
+        for (File f : result) {
+            if (!f.exists()) {
+                fail("File doesn't exist:" + f.getAbsolutePath());
+            }
+        }
+
         return result.toArray(new File[result.size()]);
+    }
+
+    protected ProteinDB importData(File[] files, DummyExperimentManager man, ExperimentData expData) {
+        for (File f : files) {
+            man.addFilesToExperiment(expData, f);
+        }
+        man.recomputeCutoff(expData);
+
+        return man.getProteinDatabase();
     }
 }

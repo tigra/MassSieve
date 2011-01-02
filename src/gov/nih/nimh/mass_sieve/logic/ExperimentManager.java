@@ -12,6 +12,7 @@ import gov.nih.nimh.mass_sieve.Peptide;
 import gov.nih.nimh.mass_sieve.PeptideCollection;
 import gov.nih.nimh.mass_sieve.PeptideHit;
 import gov.nih.nimh.mass_sieve.Protein;
+import gov.nih.nimh.mass_sieve.ProteinDB;
 import gov.nih.nimh.mass_sieve.ProteinInfo;
 import gov.nih.nimh.mass_sieve.io.FileInformation;
 import gov.nih.nimh.mass_sieve.io.ParseFile;
@@ -36,7 +37,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,12 @@ import org.biojavax.bio.seq.RichSequenceIterator;
  */
 public class ExperimentManager {
 
+    private ProteinDB proteinDB = new ProteinDB();
+
+    /**
+     * Saves a set of experiments to a given file.
+     * @throws DataStoreException if error occurs while saving bundle to storage.
+     */
     public void saveExperimentsBundle(ExperimentsBundle eb, File f) throws DataStoreException {
         ObjectOutputStream os = null;
         try {
@@ -66,7 +73,7 @@ public class ExperimentManager {
                 os.writeObject(exp);
             }
 
-            os.writeObject(eb.getProteinInfos());
+            os.writeObject(eb.getProteinDB().getMap());
 
         } catch (FileNotFoundException ex) {
             LogStub.error(ex);
@@ -81,9 +88,13 @@ public class ExperimentManager {
         }
     }
 
+    /**
+     * Loads set of experiments from a given file.
+     * @throws DataStoreException
+     */
     public ExperimentsBundle loadExperimentsBundle(File f) throws DataStoreException {
         List<Experiment> exps = new ArrayList<Experiment>();
-        Map<String, ProteinInfo> proteinDB;
+        Map<String, ProteinInfo> proteinDBMap;
 
         ObjectInputStream ois = null;
         try {
@@ -104,7 +115,7 @@ public class ExperimentManager {
             }
 
             obj = ois.readObject();
-            proteinDB = (Map<String, ProteinInfo>) obj;
+            proteinDBMap = (Map<String, ProteinInfo>) obj;
         } catch (FileNotFoundException ex) {
             LogStub.error(ex);
             String msg = "Unable to open file";
@@ -121,10 +132,18 @@ public class ExperimentManager {
             IOUtils.closeSafe(ois);
         }
 
+        addToProteinDatabase(proteinDBMap.values());
         ExperimentsBundle eb = new ExperimentsBundle(exps, proteinDB);
         return eb;
     }
 
+    /**
+     * Exports proteins, peptides, peptide hits, protein-peptide relationships
+     * and equivalent proteins.
+     * @param file File to export data.
+     * @param pepCollection Source for exported data.
+     * @return result of the operation.
+     */
     public ActionResponse exportDatabase(File file, PeptideCollection pepCollection) {
         FileWriter fw = null;
         try {
@@ -206,7 +225,7 @@ public class ExperimentManager {
         return ActionResponse.SUCCESS;
     }
 
-    public ActionResponse exportSeqDB(File file, Set<String> minProteins, Map<String, ProteinInfo> proteinDB) {
+    public ActionResponse exportSeqDB(File file, Set<String> minProteins) {
         int seqCount = 0;
         OutputStream os = null;
         try {
@@ -234,7 +253,7 @@ public class ExperimentManager {
      * Asynchroniously adds sequence db files to current experiment.
      * Notifies about current progress via listener.
      */
-    public void addSeqDBfiles(final File[] files, final Map<String, ProteinInfo> proteinDB, final MultiTaskListener listener) {
+    public void addSeqDBfiles(final File[] files, final MultiTaskListener listener) {
         //TODO: use thread pool
         new Thread(new Runnable() {
             /* TODO: use RichSequence.IOTools.readFile to guess format,
@@ -268,7 +287,7 @@ public class ExperimentManager {
                                 RichSequence seq = seqItr.nextRichSequence();
                                 String seqName = seq.getName();
                                 //System.out.println(seqName);
-                                if (proteinDB.containsKey(seqName)) {
+                                if (proteinDB.contains(seqName)) {
                                     ProteinInfo pInfo = proteinDB.get(seqName);
                                     pInfo.updateFromRichSequence(seq);
                                     //RichSequence daSeq = proteinDB.get(seqName);
@@ -330,6 +349,7 @@ public class ExperimentManager {
         fInfo.setExperiment(exp_name);
         expData.addFileInfo(fInfo);
 
+        addToProteinDatabase(result);
         return result;
     }
 
@@ -347,7 +367,7 @@ public class ExperimentManager {
         return acceptedProteins;
     }
 
-    public PeptideCollection FilterBySearchProgram(PeptideCollection pc, String filterText) {
+    public PeptideCollection filterBySearchProgram(PeptideCollection pc, String filterText) {
         PeptideCollection result;
         StringReader setDescription = new StringReader(filterText);
         SetLexer lexer = new SetLexer(setDescription);
@@ -358,9 +378,9 @@ public class ExperimentManager {
             result.updatePeptideHits();
             return result;
         } catch (TokenStreamException ex) {
-            ex.printStackTrace();
+            LogStub.error(ex);
         } catch (RecognitionException ex) {
-            ex.printStackTrace();
+            LogStub.error(ex);
         }
         return new PeptideCollection();
     }
@@ -373,23 +393,28 @@ public class ExperimentManager {
         if (!filterSettings.getUseIndeterminates()) {
             pepFiltered = pepFiltered.getNonIndeterminents();
         }
-        pepFiltered = FilterBySearchProgram(pepFiltered, expData.getFilterSettings().getFilterText());
+        pepFiltered = filterBySearchProgram(pepFiltered, expData.getFilterSettings().getFilterText());
         if (filterSettings.getFilterPeptides()) {
             pepFiltered = pepFiltered.getPeptidesByHits(filterSettings.getPepHitCutoffCount());
         }
         // TODO handle additional cutoff filter
-        pepFiltered.createProteinList();
+        pepFiltered.createProteinList(proteinDB);
         if (filterSettings.getFilterProteins()) {
-            pepFiltered = pepFiltered.filterByPeptidePerProtein(filterSettings.getPeptideCutoffCount());
+            int numPeps = filterSettings.getPeptideCutoffCount();
+            pepFiltered = pepFiltered.filterByPeptidePerProtein(proteinDB, numPeps);
         }
         if (filterSettings.getFilterCoverage()) {
             pepFiltered.updateClusters();
-            pepFiltered = pepFiltered.filterByProteinCoverage(filterSettings.getCoverageCutoffAmount());
+            int minCoverage = filterSettings.getCoverageCutoffAmount();
+            pepFiltered = pepFiltered.filterByProteinCoverage(proteinDB, minCoverage);
         }
         pepFiltered.updateClusters();
         expData.setPepCollection(pepFiltered);
     }
 
+    /**
+     * Creates new experiment data object that could be saved as serialized object.
+     */
     public Experiment getPersistentExperiment(ExperimentData expData) {
         Experiment exp = new Experiment();
         exp.setName(expData.getName());
@@ -398,5 +423,25 @@ public class ExperimentManager {
         exp.setPepCollection(expData.getPepCollection());
         exp.setPepCollectionOriginal(expData.getPepCollectionOriginal());
         return exp;
+    }
+
+    public void addToProteinDatabase(ProteinInfo pInfo) {
+        String pName = pInfo.getName();
+        if (!proteinDB.contains(pName)) {
+            proteinDB.add(pInfo);
+        } else {
+            ProteinInfo pInfoOld = proteinDB.get(pName);
+            pInfoOld.update(pInfo);
+        }
+    }
+
+    public void addToProteinDatabase(Collection<ProteinInfo> proteins) {
+        for (ProteinInfo info : proteins) {
+            addToProteinDatabase(info);
+        }
+    }
+
+    public ProteinDB getProteinDatabase() {
+        return proteinDB;
     }
 }
