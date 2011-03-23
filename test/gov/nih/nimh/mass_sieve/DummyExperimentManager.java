@@ -51,7 +51,7 @@ public class DummyExperimentManager {
         TaskListener taskListener = new DummyTaskListener();
         taskListener.onTaskStarted("Add file "+f.getName(), (int)f.length());
         InputStreamObserver inObserver = new InputStreamProgressObserver(taskListener);
-        return man.addFilesToExperiment(expData, f, inObserver, dtl);
+        return man.addFileToExperiment(expData, f, inObserver, dtl);
     }
 
     public ExperimentData createNewExperiment(String name) {

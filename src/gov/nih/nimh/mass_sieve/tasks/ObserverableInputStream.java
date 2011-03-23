@@ -22,7 +22,7 @@ public class ObserverableInputStream extends FilterInputStream {
     @Override
     public int read() throws IOException {
         int c = super.read();
-        if (c >= 0) {
+        if (c >= 0 && observer != null) {
             observer.onRead(++nread);
         }
         return c;
@@ -31,7 +31,7 @@ public class ObserverableInputStream extends FilterInputStream {
     @Override
     public int read(byte[] b) throws IOException {
         int nr = super.read(b);
-        if (nr > 0) {
+        if (nr > 0 && observer != null) {
             observer.onRead(nread += nr);
         }
 
@@ -41,7 +41,7 @@ public class ObserverableInputStream extends FilterInputStream {
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
         int nr = super.read(b, off, len);
-        if (nr > 0) {
+        if (nr > 0 && observer != null) {
             observer.onRead(nread += nr);
         }
 

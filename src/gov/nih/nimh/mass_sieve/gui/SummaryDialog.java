@@ -132,9 +132,6 @@ public class SummaryDialog extends Dialog {
         setVisible(false);
     }//GEN-LAST:event_jButtonDismissActionPerformed
     
-    /**
-     * @param args the command line arguments
-     */
 //    public static void main(String args[]) {
 //        java.awt.EventQueue.invokeLater(new Runnable() {
 //            public void run() {

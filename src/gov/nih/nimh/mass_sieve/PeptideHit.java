@@ -159,6 +159,7 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
         return sequence.compareToIgnoreCase(p.getSequence());
     }
 
+    @Override
     public boolean equals(Object obj) {
         if (obj == null) {
             return false;
@@ -176,6 +177,7 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
                 && p.getCharge() == Z;
     }
 
+    @Override
     public int hashCode() {
         return scanNum;
     //return sequence.hashCode();
@@ -394,8 +396,8 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
         return experiment;
     }
 
-    public void setExperiment(String e) {
-        experiment = e.intern();
+    public void setExperiment(String expName) {
+        experiment = expName.intern();
     }
 
     public boolean isIndeterminate() {

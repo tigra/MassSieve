@@ -18,6 +18,7 @@ public enum PeptideIndeterminacyType {
      * No PetideHits are indeterminate
      */
     NONE {
+        @Override
         public String toString() {
             return "";
         }
@@ -27,6 +28,7 @@ public enum PeptideIndeterminacyType {
      * Some PeptideHits are indeterminate
      */
     SOME {
+        @Override
         public String toString() {
             return "Some peptides";
         }
@@ -36,6 +38,7 @@ public enum PeptideIndeterminacyType {
      * All of the PeptideHits are indeterminate.
      */
     ALL {
+        @Override
         public String toString() {
             return "All peptides";
         }

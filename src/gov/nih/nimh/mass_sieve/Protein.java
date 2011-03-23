@@ -8,7 +8,7 @@
 package gov.nih.nimh.mass_sieve;
 
 import ca.odell.glazedlists.EventList;
-import gov.nih.nimh.mass_sieve.gui.SequencePanel;
+import gov.nih.nimh.mass_sieve.util.StringUtils;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import javax.swing.JPanel;
 import org.biojava.bio.BioException;
 import org.biojava.bio.proteomics.IsoelectricPointCalc;
 import org.biojava.bio.proteomics.MassCalc;
@@ -342,16 +341,6 @@ public class Protein implements Serializable, Comparable<Protein> {
         return allPepHits;
     }
 
-    public JPanel getSequenceDisplay(String peptideDigest, int size) {
-        SequencePanel sp = new SequencePanel(this, true, peptideDigest, size);
-        return sp;
-    }
-
-    public JPanel getSequenceDisplay(int size) {
-        SequencePanel sp = new SequencePanel(this, false, "", size);
-        return sp;
-    }
-
     public void print() {
         System.out.print("Name: " + name);
         //System.out.print(" Id: " + id);
@@ -632,17 +621,9 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public String getEquivalentList() {
         if (equivalentList == null) {
-            String buf = null;
             ArrayList<Protein> equivList = new ArrayList<Protein>(equivalent);
             Collections.sort(equivList);
-            for (Protein p : equivList) {
-                if (buf == null) {
-                    buf = p.getName();
-                } else {
-                    buf += ", " + p.getName();
-                }
-            }
-            equivalentList = buf;
+            equivalentList = StringUtils.toString(", ", equivList.toArray());
         }
         return equivalentList;
     }
@@ -677,34 +658,18 @@ public class Protein implements Serializable, Comparable<Protein> {
 
     public String getExperimentList() {
         if (experimentList == null) {
-            String buf = null;
             ArrayList<String> expList = new ArrayList<String>(experimentSet);
             Collections.sort(expList);
-            for (String p : expList) {
-                if (buf == null) {
-                    buf = p;
-                } else {
-                    buf += ", " + p;
-                }
-            }
-            experimentList = buf;
+            experimentList = StringUtils.toString(", ", expList.toArray());
         }
         return experimentList;
     }
 
     public String getFileList() {
         if (fileList == null) {
-            String buf = null;
             ArrayList<String> fList = new ArrayList<String>(fileSet);
             Collections.sort(fList);
-            for (String p : fList) {
-                if (buf == null) {
-                    buf = p;
-                } else {
-                    buf += ", " + p;
-                }
-            }
-            fileList = buf;
+            fileList = StringUtils.toString(", ", fList.toArray());
         }
         return fileList;
     }

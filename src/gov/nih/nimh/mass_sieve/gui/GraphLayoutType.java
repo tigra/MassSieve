@@ -7,7 +7,7 @@
  * and open the template in the editor.
  */
 
-package gov.nih.nimh.mass_sieve;
+package gov.nih.nimh.mass_sieve.gui;
 
 /**
  * This enumerates the possible algorithms for graph layouts for the peptide-protein graphs.

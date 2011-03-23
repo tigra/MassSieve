@@ -70,6 +70,7 @@ public class PeptideProteinNameSet {
      * The name of this set of peptides and proteins
      * @return set name.
      */
+    @Override
     public String toString() {
         return name;
     }

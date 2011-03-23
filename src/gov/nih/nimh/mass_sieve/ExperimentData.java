@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Holds data about single experiment.
  *
  * @author Alex Turbin (alex.academATgmail.com)
  */

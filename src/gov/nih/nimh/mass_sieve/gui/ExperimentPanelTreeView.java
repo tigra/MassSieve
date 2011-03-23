@@ -32,7 +32,7 @@ public class ExperimentPanelTreeView {
     }
 
     private DefaultMutableTreeNode getPeptideHitsTree(PeptideCollection pepCollection, ExperimentPanel expPanel) {
-        PeptideHitListPanel panel = pepCollection.getPeptideHitListPanel(expPanel);
+        PeptideHitListPanel panel = pepCollection.getView().getPeptideHitListPanel(expPanel);
         DefaultMutableTreeNode root = new DefaultMutableTreeNode(panel);
         return root;
     }
@@ -40,7 +40,7 @@ public class ExperimentPanelTreeView {
     private DefaultMutableTreeNode getPeptideTree(PeptideCollection pepCollection, ExperimentPanel expPanel, boolean useListPanel) {
         DefaultMutableTreeNode root;
         if (useListPanel) {
-            root = new DefaultMutableTreeNode(pepCollection.getPeptideListPanel(expPanel));
+            root = new DefaultMutableTreeNode(pepCollection.getView().getPeptideListPanel(expPanel));
         } else {
             PeptideProteinNameSet pps = pepCollection.getPeptideProteinNameSet();
             pps.setName("Peptides (" + pps.getPeptides().size() + ")");
@@ -61,7 +61,7 @@ public class ExperimentPanelTreeView {
     private DefaultMutableTreeNode getProteinTree(PeptideCollection pepCollection, ExperimentPanel expPanel, boolean useListPanel) {
         DefaultMutableTreeNode root;
         if (useListPanel) {
-            ProteinListPanel plp = pepCollection.getProteinListPanel(expPanel);
+            ProteinListPanel plp = pepCollection.getView().getProteinListPanel(expPanel);
             root = new DefaultMutableTreeNode(plp);
         } else {
             PeptideProteinNameSet pps = pepCollection.getPeptideProteinNameSet();
@@ -81,7 +81,8 @@ public class ExperimentPanelTreeView {
     }
 
     private DefaultMutableTreeNode getClusterTree(PeptideCollection pepCollection, ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(pepCollection.getClusterListPanel(expPanel));
+        PeptideCollectionView view = pepCollection.getView();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(view.getClusterListPanel(expPanel));
         DefaultMutableTreeNode child, grandchild;
 
         // Sort by cluster num
@@ -101,7 +102,8 @@ public class ExperimentPanelTreeView {
     }
 
     private DefaultMutableTreeNode getParsimonyTree(PeptideCollection pepCollection, ExperimentPanel expPanel) {
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(pepCollection.getParsimonyListPanel(expPanel));
+        PeptideCollectionView view = pepCollection.getView();
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(view.getParsimonyListPanel(expPanel));
         DefaultMutableTreeNode child;
 
         // Discrete

@@ -10,9 +10,14 @@ public class LogStub {
 
     private static final String DEBUG_MARKER = "[DEBUG] ";
     private static final String TRACE_MARKER = "[TRACE] ";
+    private static final String WARN_MARKER  = "[WARN ] ";
 
     public static void trace(Object param) {
         System.out.printf("%s%s\n", TRACE_MARKER, param);
+    }
+
+    public static void warn(String msg) {
+        System.out.printf("%s%s\n", WARN_MARKER, msg);
     }
 
     private LogStub() {

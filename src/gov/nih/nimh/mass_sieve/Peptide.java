@@ -7,6 +7,7 @@
  */
 
 package gov.nih.nimh.mass_sieve;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -286,6 +287,7 @@ public class Peptide implements Serializable, Comparable<Peptide> {
      * A string-ified version of this peptide for display purposes.
      * @return The string version of this peptide
      */
+    @Override
     public String toString() {
         //return sequence + " (" + proteinSet.size() + ")";
         return sequence;
@@ -300,10 +302,12 @@ public class Peptide implements Serializable, Comparable<Peptide> {
         
         if (exp.size() > 1) {
             for (String e:exp) {
-                pepHitsStr.append(getNumPeptideHits(e).toString() + ",");
+                pepHitsStr.append(getNumPeptideHits(e).toString());
+                pepHitsStr.append(",");
             }
         } else {
-            pepHitsStr.append(getNumPeptideHits().toString() + ",");
+            pepHitsStr.append(getNumPeptideHits().toString());
+            pepHitsStr.append(",");
         }
         return sequence + "," + pepHitsStr
                 //+ getNumPeptideHits() + ","

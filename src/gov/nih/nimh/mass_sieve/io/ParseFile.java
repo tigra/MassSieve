@@ -94,7 +94,7 @@ public class ParseFile {
     }
 
     protected int scanFilenameToScanNumber(String fn) {
-        StringBuffer sb = new StringBuffer(fn);
+        StringBuilder sb = new StringBuilder(fn);
         int val, start, stop;
         start = sb.indexOf(".") + 1;
         stop = sb.substring(start).indexOf(".") + start;

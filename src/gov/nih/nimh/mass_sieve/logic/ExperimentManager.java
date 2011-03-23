@@ -38,6 +38,7 @@ import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,16 @@ public class ExperimentManager {
 
         addToProteinDatabase(proteinDBMap.values());
         ExperimentsBundle eb = new ExperimentsBundle(exps, proteinDB);
+        // assing proteinDB to every experiment
+        for (Experiment e : exps)
+        {
+            PeptideCollection pepCol = e.getPepCollection();
+            HashMap<String, Protein> minProteins = pepCol.getMinProteins();
+            for (Protein pro : minProteins.values())
+            {
+                pro.setProteinDB(proteinDB);
+            }
+        }
         return eb;
     }
 
@@ -329,16 +340,16 @@ public class ExperimentManager {
         return new ExperimentData(expName);
     }
 
-    public List<ProteinInfo> addFilesToExperiment(ExperimentData expData, File f,
+    public List<ProteinInfo> addFileToExperiment(ExperimentData expData, File f,
             InputStreamObserver inputObserver, DeterminedTaskListener parseListener) {
         List<ProteinInfo> result = new ArrayList<ProteinInfo>();
 
-        String exp_name = expData.getName();
+        String expName = expData.getName();
         expData.addFile(f);
         String filename = f.getName();
 
         ParseFile pf = new ParseFile(f, inputObserver, parseListener);
-        Set<String> acceptedProteins = processPeptideCollection(exp_name, filename, pf.getPeptideHits(), expData);
+        Set<String> acceptedProteins = processPeptideCollection(expName, filename, pf.getPeptideHits(), expData);
         Map<String, ProteinInfo> pDB = pf.getProteinDB();
         for (String pName : pDB.keySet()) {
             if (acceptedProteins.contains(pName)) {
@@ -346,18 +357,18 @@ public class ExperimentManager {
             }
         }
         FileInformation fInfo = pf.getFileInformation();
-        fInfo.setExperiment(exp_name);
+        fInfo.setExperiment(expName);
         expData.addFileInfo(fInfo);
 
         addToProteinDatabase(result);
         return result;
     }
 
-    private Set<String> processPeptideCollection(String exp_name, String filename, final List<PeptideHit> peptideHits,
+    private Set<String> processPeptideCollection(String expName, String filename, final List<PeptideHit> peptideHits,
             ExperimentData expData) {
         Set<String> acceptedProteins = new HashSet<String>();
         for (PeptideHit p : peptideHits) {
-            p.setExperiment(exp_name);
+            p.setExperiment(expName);
             p.setSourceFile(filename);
             if (expData.getFilterSettings().peptideHitConformsToFilter(p)) {
                 expData.getPepCollectionOriginal().addPeptideHit(p);
@@ -443,5 +454,14 @@ public class ExperimentManager {
 
     public ProteinDB getProteinDatabase() {
         return proteinDB;
+    }
+
+    public void saveExperiment(ExperimentData exp, File file) throws DataStoreException {
+        Experiment persist = getPersistentExperiment(exp);
+        List<Experiment> persistList = new ArrayList<Experiment>();
+        persistList.add(persist);
+
+        ExperimentsBundle bundle = new ExperimentsBundle(persistList, proteinDB);
+        saveExperimentsBundle(bundle, file);
     }
 }
