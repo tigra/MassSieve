@@ -11,14 +11,14 @@ import static gov.nih.nimh.mass_sieve.TestConstants.*;
  *
  * @author Alex Turbin (alex.academATgmail.com)
  */
-public class CLIMergeTest {
+public class CLIMergeTest extends CLITestBase {
 
     private String inputSearchFile1 = "./"+DIR_DATA+"/"+DEF_TEST_FILE;
     private String inputSearchFile2 = "./"+DIR_DATA+"/"+DEF_TEST_FILE_2;
-    private String outputExportDatabaseFilename = "./"+DIR_OUT+"/"+"cli_export_db";
-    private String outputExportResultsFilename = "./"+DIR_OUT+"/"+"cli_export_results";
-    private String outputExportPreferredFilename = "./"+DIR_OUT+"/"+"cli_export_pref";
-    private String outputExperimentFilename = "./"+DIR_OUT+"/"+"cli_experiment";
+    private String outputExportDatabaseFilename = "./"+DIR_OUT+"/"+"cli_MT_export_db";
+    private String outputExportResultsFilename = "./"+DIR_OUT+"/"+"cli_MT_export_results";
+    private String outputExportPreferredFilename = "./"+DIR_OUT+"/"+"cli_MT_export_pref";
+    private String outputExperimentFilename = "./"+DIR_OUT+"/"+"cli_MT_experiment";
     private File outputDir;
     private boolean outputDirCreated = false;
 
@@ -58,6 +58,7 @@ public class CLIMergeTest {
     @Test
     public void test() {
         String[] cmdParams = {
+            "-do", CLI.ACTION_NAME_MERGE,
             "-n", "MergeExperiment",
             "-a", inputSearchFile1,
             "-a", inputSearchFile2,
@@ -80,14 +81,5 @@ public class CLIMergeTest {
         checkFileNotEmpty(outputExportResultsFilename);
         checkFileNotEmpty(outputExportPreferredFilename);
         checkFileNotEmpty(outputExperimentFilename);
-    }
-
-    private void checkFileNotEmpty(String filename) {
-        File realFile = new File(filename);
-        boolean exists = realFile.exists() && realFile.isFile();
-        assertEquals("File must exist:" + realFile.getAbsolutePath(), true, exists);
-
-        boolean notEmpty = realFile.length() > 0;
-        assertEquals("File must be not empty:" + realFile.getAbsolutePath(), true, notEmpty);
     }
 }

@@ -14,6 +14,7 @@ import gov.nih.nimh.mass_sieve.PeptideHit;
 import gov.nih.nimh.mass_sieve.Protein;
 import gov.nih.nimh.mass_sieve.ProteinDB;
 import gov.nih.nimh.mass_sieve.ProteinInfo;
+import gov.nih.nimh.mass_sieve.io.CSVWriter;
 import gov.nih.nimh.mass_sieve.io.FileInformation;
 import gov.nih.nimh.mass_sieve.io.ParseFile;
 import gov.nih.nimh.mass_sieve.io.SetLexer;
@@ -25,6 +26,7 @@ import gov.nih.nimh.mass_sieve.tasks.MultiTaskListener;
 import gov.nih.nimh.mass_sieve.tasks.ObserverableInputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,8 +38,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +69,7 @@ public class ExperimentManager {
     public void saveExperimentsBundle(ExperimentsBundle eb, File f) throws DataStoreException {
         ObjectOutputStream os = null;
         try {
-            os = new ObjectOutputStream(new FileOutputStream(f));
+            os = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(f)));
 
             List<Experiment> experiments = eb.getExperiments();
             os.writeInt(experiments.size());
@@ -100,7 +104,7 @@ public class ExperimentManager {
         ObjectInputStream ois = null;
         try {
             Object obj;
-            ois = new ObjectInputStream(new FileInputStream(f));
+            ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(f)));
 
             int expCount = ois.readInt();
             if (expCount == 1) {
@@ -135,13 +139,11 @@ public class ExperimentManager {
 
         addToProteinDatabase(proteinDBMap.values());
         ExperimentsBundle eb = new ExperimentsBundle(exps, proteinDB);
-        // assing proteinDB to every experiment
-        for (Experiment e : exps)
-        {
+        // assign proteinDB to every experiment
+        for (Experiment e : exps) {
             PeptideCollection pepCol = e.getPepCollection();
             HashMap<String, Protein> minProteins = pepCol.getMinProteins();
-            for (Protein pro : minProteins.values())
-            {
+            for (Protein pro : minProteins.values()) {
                 pro.setProteinDB(proteinDB);
             }
         }
@@ -156,9 +158,9 @@ public class ExperimentManager {
      * @return result of the operation.
      */
     public ActionResponse exportDatabase(File file, PeptideCollection pepCollection) {
-        FileWriter fw = null;
+        Writer fw = null;
         try {
-            fw = new FileWriter(file);
+            fw = new BufferedWriter(new FileWriter(file));
             // export proteins
             fw.write("# Proteins\n");
             fw.write(Protein.toTabStringHeader());
@@ -203,9 +205,9 @@ public class ExperimentManager {
     }
 
     public ActionResponse exportResults(File file, PeptideCollection pepCollection, ExportProteinType type) {
-        FileWriter fw = null;
+        Writer fw = null;
         try {
-            fw = new FileWriter(file);
+            fw = new BufferedWriter(new FileWriter(file));
             //	Output column headers if any.
             if (ExportProteinType.PREFERRED == type) {
                 fw.write("Proteins\tPeptides\tScans\n");
@@ -458,10 +460,104 @@ public class ExperimentManager {
 
     public void saveExperiment(ExperimentData exp, File file) throws DataStoreException {
         Experiment persist = getPersistentExperiment(exp);
+        saveExperiment(persist, file);
+    }
+
+    public void saveExperiment(Experiment exp, File file) throws DataStoreException {
         List<Experiment> persistList = new ArrayList<Experiment>();
-        persistList.add(persist);
+        persistList.add(exp);
 
         ExperimentsBundle bundle = new ExperimentsBundle(persistList, proteinDB);
         saveExperimentsBundle(bundle, file);
+    }
+
+    CompareExperimentDiffData compareExperimentDiff(List<ExperimentsBundle> bundles) {
+        List<String> experimentsNames = new ArrayList<String>();
+        HashSet<String> uniqueProteins = new HashSet<String>();
+        List<Experiment> experiments = new ArrayList<Experiment>();
+        for (ExperimentsBundle eb : bundles) {
+            List<Experiment> exps = eb.getExperiments();
+            for (Experiment e : exps) {
+                String expName = e.getName();
+                experimentsNames.add(expName);
+                uniqueProteins.addAll(e.getPepCollection().getMinProteins().keySet());
+            }
+            experiments.addAll(exps);
+        }
+        ArrayList<String> proteins = new ArrayList<String>(uniqueProteins);
+        Collections.sort(proteins);
+
+        // prepare header data
+        List<String> columnNames = new ArrayList<String>();
+        columnNames.add("Protein Name");
+        for (String eName : experimentsNames) {
+            columnNames.add(eName + " Parsimony");
+            columnNames.add(eName + " Cover");
+            columnNames.add(eName + " %Cover");
+            columnNames.add(eName + " Unique Peps");
+            columnNames.add(eName + " PepHits");
+        }
+        // end prepare header data
+
+        return new CompareExperimentDiffData(columnNames, proteins, experiments);
+    }
+
+    public void exportCompareExperimentDiffData(String filename, CompareExperimentDiffData cedd) throws DataStoreException {
+        File cvsFile = new File(filename);
+        CSVWriter writer = null;
+        try {
+            writer = new CSVWriter(cvsFile);
+
+            writer.write(cedd.getColumnNames());
+
+            int totalRows = cedd.getRowCount();
+            for (int i = 0; i < totalRows; i++) {
+                Object[] row = cedd.getRow(i);
+                writer.write(row);
+            }
+        } catch (IOException e) {
+            throw new DataStoreException("Cannot write csv file:" + filename, e);
+        } finally {
+            IOUtils.closeSafe(writer);
+        }
+    }
+
+    public Experiment compareExperimentsParsimonies(String name, List<Experiment> expsToCompare) {
+        ArrayList<PeptideHit> allHits = new ArrayList<PeptideHit>();
+        ArrayList<FileInformation> fInfos = new ArrayList<FileInformation>();
+
+        double maxMascot = Double.MIN_VALUE;
+        double maxOmssa = Double.MIN_VALUE;
+        double maxXtandem = Double.MIN_VALUE;
+        for (Experiment exp : expsToCompare) {
+            if (exp.getFilterSettings().getMascotCutoff() > maxMascot) {
+                maxMascot = exp.getFilterSettings().getMascotCutoff();
+            }
+            if (exp.getFilterSettings().getOmssaCutoff() > maxOmssa) {
+                maxOmssa = exp.getFilterSettings().getOmssaCutoff();
+            }
+            if (exp.getFilterSettings().getXtandemCutoff() > maxXtandem) {
+                maxXtandem = exp.getFilterSettings().getXtandemCutoff();
+            }
+            allHits.addAll(exp.getPepCollection().getPeptideHits());
+            fInfos.addAll(exp.getFileInfos());
+        }
+
+        ExperimentData comparisonData = new ExperimentData(name);
+        FilterSettings fs = new FilterSettings();
+        fs.setUseIonIdent(false);
+        fs.setMascotCutoff(maxMascot);
+        fs.setOmssaCutoff(maxOmssa);
+        fs.setXtandemCutoff(maxXtandem);
+
+        comparisonData.setFilterSettings(fs);
+        comparisonData.setFileInfos(fInfos);
+
+        for (PeptideHit p : allHits) {
+            comparisonData.getPepCollectionOriginal().addPeptideHit(p);
+        }
+        recomputeCutoff(comparisonData);
+
+        return getPersistentExperiment(comparisonData);
     }
 }
