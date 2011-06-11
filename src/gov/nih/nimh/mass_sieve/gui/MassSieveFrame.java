@@ -6,7 +6,6 @@
 package gov.nih.nimh.mass_sieve.gui;
 
 import gov.nih.nimh.mass_sieve.*;
-import gov.nih.nimh.mass_sieve.io.FileInformation;
 import gov.nih.nimh.mass_sieve.logic.ActionResponse;
 import gov.nih.nimh.mass_sieve.logic.ApplicationManager;
 import gov.nih.nimh.mass_sieve.logic.DataStoreException;
@@ -546,36 +545,21 @@ public class MassSieveFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuOptionsActionPerformed
 
     private void jMenuCompareParsimonyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuCompareParsimonyActionPerformed
-        ArrayList<PeptideHit> allHits = new ArrayList<PeptideHit>();
-        ArrayList<FileInformation> fInfos = new ArrayList<FileInformation>();
         Component comps[] = jTabbedPaneMain.getComponents();
-        double maxMascot = Double.MIN_VALUE;
-        double maxOmssa = Double.MIN_VALUE;
-        double maxXtandem = Double.MIN_VALUE;
+        List<Experiment> expsToCompare = new ArrayList<Experiment>();
         for (Component comp : comps) {
             if (comp instanceof ExperimentPanel) {
                 ExperimentPanel exp = (ExperimentPanel) comp;
-                if (exp.getFilterSettings().getMascotCutoff() > maxMascot) {
-                    maxMascot = exp.getFilterSettings().getMascotCutoff();
-                }
-                if (exp.getFilterSettings().getOmssaCutoff() > maxOmssa) {
-                    maxOmssa = exp.getFilterSettings().getOmssaCutoff();
-                }
-                if (exp.getFilterSettings().getXtandemCutoff() > maxXtandem) {
-                    maxXtandem = exp.getFilterSettings().getXtandemCutoff();
-                }
-                allHits.addAll(exp.getPepCollection().getPeptideHits());
-                fInfos.addAll(exp.getFileInfos());
+                expsToCompare.add(exp.getPersistentExperiment());
             }
         }
-        currentExperiment = new ExperimentPanel(this, "Parsimony Comparison");
-        currentExperiment.getFilterSettings().setUseIonIdent(false);
-        currentExperiment.getFilterSettings().setMascotCutoff(maxMascot);
-        currentExperiment.getFilterSettings().setOmssaCutoff(maxOmssa);
-        currentExperiment.getFilterSettings().setXtandemCutoff(maxXtandem);
-        currentExperiment.addPeptideHits(allHits);
-        currentExperiment.setFileInfos(fInfos);
-        expSet.put("Parsimony Comparison", currentExperiment);
+
+        String name = "Parsimony Comparison";
+        Experiment comparison = expManager.compareExperimentsParsimonies(name, expsToCompare);
+        currentExperiment = new ExperimentPanel(this, name);
+        currentExperiment.reloadData(comparison);
+
+        expSet.put(name, currentExperiment);
         jTabbedPaneMain.add(currentExperiment);
         jTabbedPaneMain.setSelectedComponent(currentExperiment);
     }//GEN-LAST:event_jMenuCompareParsimonyActionPerformed
@@ -815,6 +799,9 @@ public class MassSieveFrame extends javax.swing.JFrame {
             currentExperiment = (ExperimentPanel) current;
 
             ExportProteinType proteinType = askForExportProteinType();
+            if (null == proteinType) {
+                return;
+            }
             jFileChooserLoad.setSelectedFile(new File(currentExperiment.getName() + "_results.txt"));
             File selectedFile = chooseFileToCreate(txtFilter, null);
             if (null == selectedFile) {
@@ -833,7 +820,7 @@ public class MassSieveFrame extends javax.swing.JFrame {
     /**
      * Asks user to select type of exported set of proteins.
      * Available "preferred only" and "All proteins" cases.
-     * @return export protein type
+     * @return export protein type or <b>null</b> if dialog was closed.
      */
     private ExportProteinType askForExportProteinType() {
         Object[] options = {
@@ -855,6 +842,9 @@ public class MassSieveFrame extends javax.swing.JFrame {
             case 1:
                 System.out.println("All proteins selected");
                 break;
+            case JOptionPane.CLOSED_OPTION:
+                System.out.println("Dialog closed");
+                return null;
             default:
                 throw new IllegalStateException("Not implemented");
         }

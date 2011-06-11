@@ -9,25 +9,20 @@ import java.util.List;
  *
  * @author Alex Turbin (alex.academATgmail.com)
  */
-public class MergeAction extends ExternalAction{
-    private String name = "Merge";
-
+public class CompareExpParsimonyAction extends ExternalAction {
+    ExportParams exportParams;
+    FilterSettings filter;
     String experimentName;
     private List<String> inputFileNames = new ArrayList<String>();
-    ExportParams exportParams = new ExportParams();
-    FilterSettings filter;
 
-    public String getActionName()
+    public CompareExpParsimonyAction()
     {
-        return name;
     }
 
-    public String getExperimentName()
-    {
+    public String getExperimentName() {
         return experimentName;
     }
 
-    
     public void addInputFileName(String fileName)
     {
         inputFileNames.add(fileName);
@@ -54,11 +49,6 @@ public class MergeAction extends ExternalAction{
     public String getSaveExpFilename()
     {
         return exportParams.saveExpFilename;
-    }
-
-    public FilterSettings getFilterSettings()
-    {
-        return filter;
     }
 
 }

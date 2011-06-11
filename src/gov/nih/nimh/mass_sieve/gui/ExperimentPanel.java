@@ -124,12 +124,12 @@ public class ExperimentPanel extends JPanel {
     public ExperimentPanel(MassSieveFrame frm, String name) {
         expManager = frm.getManager();
         expData = expManager.createNewExperiment(name);
+        expData.setFilterSettings(new FilterSettings());
         msFrame = frm;
         this.setName(name);
         initComponents();
         loadDockState();
         jFileChooserLoad.setMultiSelectionEnabled(true);
-        expData.setFilterSettings(new FilterSettings());
         FilterSettings filterSettings = expData.getFilterSettings();
         omssaCutoffOrig = filterSettings.getOmssaCutoff();
         mascotCutoffOrig = filterSettings.getMascotCutoff();
