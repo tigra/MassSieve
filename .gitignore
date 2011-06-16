@@ -1,2 +1,2 @@
-/dist/
-/build/
+MassSieve-gui/dist/*
+MassSieve-gui/build/*
