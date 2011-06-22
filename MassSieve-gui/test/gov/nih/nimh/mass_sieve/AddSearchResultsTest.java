@@ -25,17 +25,17 @@ public class AddSearchResultsTest extends TestBase {
 
     @Test
     public void testAddSearchResults_NewExperiment() {
-        File[] inFiles = getSeqFiles();
-        ExperimentData expData = createExperiment();
-        ProteinDB loadedProteins = importData(inFiles, man, expData);
+        File[] inFiles = getSeqFiles(); //TODO Replace with a reference to a real file
+        ExperimentData experimentData = createExperiment();
+        ProteinDB loadedProteins = man.importData(inFiles, experimentData);
 
         // validate
-        List<File> files = expData.getFiles();
-        PeptideCollection pepColl = expData.getPepCollection();
-        PeptideCollection pepCollOrig = expData.getPepCollectionOriginal();
+        List<File> files = experimentData.getFiles();
+        PeptideCollection pepColl = experimentData.getPepCollection();
+        PeptideCollection pepCollOrig = experimentData.getPepCollectionOriginal();
         assertFalse("Loaded proteins are empty", loadedProteins.isEmpty());
         assertArrayEquals("Files mismatch.", inFiles, files.toArray(new File[0]));
-        assertEquals("Experiment name changed.", expName, expData.getName());
+        assertEquals("Experiment name changed.", expName, experimentData.getName());
         assertTrue("Peptide collection is empty", checkNotEmpty(pepColl));
 
         // original peptide collection has no computed proteins, so check only for
@@ -49,7 +49,7 @@ public class AddSearchResultsTest extends TestBase {
         // create new experiment and populate it with some results.
         File[] initFiles = getSeqFiles();
         ExperimentData expData = createExperiment();
-        ProteinDB initProteinDB = importData(initFiles, man, expData);
+        ProteinDB initProteinDB = man.importData(initFiles, expData);
         Map<String, ProteinInfo> initProteins = initProteinDB.getMap();
 
         // fetch current state of experiment:
@@ -57,7 +57,7 @@ public class AddSearchResultsTest extends TestBase {
 
         // add search results to existing experiment:
         File[] inFiles = getSeqFiles(TestConstants.DEF_TEST_FILE_2);
-        ProteinDB resultProteinDB = importData(inFiles, man, expData);
+        ProteinDB resultProteinDB = man.importData(inFiles, expData);
         Map<String, ProteinInfo> resultProteins = resultProteinDB.getMap();
 
         // validate
@@ -100,8 +100,8 @@ public class AddSearchResultsTest extends TestBase {
         ExperimentData expData = man.createNewExperiment(expName);
         expData.setFilterSettings(new FilterSettings());
 
-        PeptideCollection initPepColl = expData.getPepCollection();
-        assertEquals("", true, null == initPepColl);
+        assertNull(expData.getPepCollection());
+        // TODO Write a separate test instead
 
         return expData;
     }
