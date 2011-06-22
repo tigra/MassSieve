@@ -1,12 +1,17 @@
 package gov.nih.nimh.mass_sieve.tasks;
 
 /**
+ * Represents progress on a multi-step task.
+ * Task has integer <code>totalSize</code>, knows its <code>currentStepName</code>
+ * and <code>currentProgress</code>.
+ * When progress is made (by call to <code>setProgress</code>) or execution of next
+ * step is started (by call to <code>setStep</code>) it notifies a listener.
  *
- * @author Alex Turbin (alex.academATgmail.com)
+ * @author Alex Turbin alex.academ@gmail.com
  */
 public class Task {
-    private String curStep;
-    private int curProgress;
+    private String currentStepName;
+    private int currentProgress;
     private final int totalSize;
 
     private DeterminedTaskListener listener;
@@ -17,18 +22,18 @@ public class Task {
     }
 
     public void setStep(String stepName) {
-        curStep = stepName;
-        listener.onChangeStepName(curStep);
+        currentStepName = stepName;
+        listener.onChangeStepName(currentStepName);
     }
 
     public void setProgress(int value) {
-        curProgress = value;
-        listener.onProgress(curProgress, totalSize);
+        currentProgress = value;
+        listener.onProgress(currentProgress, totalSize);
         checkIfDone();
     }
 
     private boolean checkIfDone() {
-        if (totalSize <= curProgress) {
+        if (totalSize <= currentProgress) {
             listener.onFinish();
             return true;
         }
