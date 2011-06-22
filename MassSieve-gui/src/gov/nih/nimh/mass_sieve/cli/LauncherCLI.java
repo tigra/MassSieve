@@ -1,61 +1,59 @@
 package gov.nih.nimh.mass_sieve.cli;
 
-import gov.nih.nimh.mass_sieve.actions.CompareExpParsimonyActionBuilder;
-import gov.nih.nimh.mass_sieve.actions.ExternalAction;
-import gov.nih.nimh.mass_sieve.logic.ActionExecutor;
-import gov.nih.nimh.mass_sieve.actions.MergeActionBuilder;
-import gov.nih.nimh.mass_sieve.actions.ActionBuilder;
-import gov.nih.nimh.mass_sieve.actions.CompareExpDiffActionBuilder;
+import gov.nih.nimh.mass_sieve.actions.*;
 import gov.nih.nimh.mass_sieve.logic.ActionResult;
 import gov.nih.nimh.mass_sieve.util.LogStub;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 
 import static gov.nih.nimh.mass_sieve.cli.CLI.*;
 
 /**
+ * Command line interface launcher
  *
  * @author Alex Turbin (alex.academATgmail.com)
  */
 public class LauncherCLI {
 
-    private final Options cmdOptions;
+    private final static Options cmdOptions;
+    private final HelpFormatter formatter = new HelpFormatter();
+
+    // Result codes
+
+    private static final int CODE_BAD_COMMAND_LINE = -2;
+    private static final int CODE_SUCCESS = 0;
+    private static final int CODE_UNSUCCESSFUL_EXECUTION = -1;
+    private static final int CODE_UNEXPECTED_ERROR = -3;
+
+    static {
+        cmdOptions = defineCommandLineOptions();
+    }
 
     public LauncherCLI() {
-        cmdOptions = defineOptions();
+//        cmdOptions = defineOptions();
     }
 
     public int run(String[] args) {
         try {
-            ActionExecutor executor = new ActionExecutor();
             ExternalAction action = parseOptions(cmdOptions, args);
-            ActionResult actionResult = executor.perform(action);
-            return (actionResult == ActionResult.SUCCESS) ? 0 : -1;
+            ActionResult actionResult = action.perform();
+            return actionResult == ActionResult.SUCCESS ? CODE_SUCCESS : CODE_UNSUCCESSFUL_EXECUTION;
         } catch (CLIParseException e) {
             //TODO: to log file
             // LogStub.error(e);
             printHelp(e.getMessage());
-            return -2;
-        } catch (Throwable t)
-        {
+            return CODE_BAD_COMMAND_LINE;
+        } catch (Throwable t) {
             LogStub.error(t);
             printHelp(null);
-            return -3;
+            return CODE_UNEXPECTED_ERROR;
         }
     }
 
-    private void printHelp(String message)
-    {
-        HelpFormatter formatter = new HelpFormatter();
+    private void printHelp(String message) {
         formatter.printHelp("mass_sieve <options>", "Available options:", cmdOptions, message);
     }
 
-    private Options defineOptions() {
+    private static Options defineCommandLineOptions() {
         Options options = new Options();
 
         Option actionName = new Option(OPT_ACTION, true, "Name of the action");
@@ -101,33 +99,29 @@ public class LauncherCLI {
 
     private ExternalAction parseOptions(Options opts, String[] args) throws CLIParseException {
         CommandLineParser parser = new GnuParser();
-        CommandLine cmd = null;
         try {
-            cmd = parser.parse(opts, args);
+            return createAction(parser.parse(opts, args));
         } catch (ParseException ex) {
             throw new CLIParseException(ex);
         }
+    }
 
+    private ExternalAction createAction(CommandLine cmd) throws CLIParseException {
+        // TODO Do we need a separate builder for each Action? Parallel class hierarchies...
         ActionBuilder actionBuilder = createActionBuilder(cmd);
-        ExternalAction action = actionBuilder.createAction(cmd);
-
-        return action;
+        return actionBuilder.createAction(cmd);
     }
 
     private ActionBuilder createActionBuilder(CommandLine cmd) {
         ActionBuilder result = null;
 
         String actionName = cmd.getOptionValue(OPT_ACTION);
-        if (ACTION_NAME_MERGE.equalsIgnoreCase(actionName))
-        {
+        if (ACTION_NAME_MERGE.equalsIgnoreCase(actionName)) {
+            // TODO Do we need a separate builder for each Action? Parallel class hierarchies...
             result = new MergeActionBuilder();
-        }
-        else if (ACTION_NAME_COMPARE.equalsIgnoreCase(actionName))
-        {
+        } else if (ACTION_NAME_COMPARE.equalsIgnoreCase(actionName)) {
             result = new CompareExpDiffActionBuilder();
-        }
-        else if (ACTION_NAME_COMPARE_PARSIMONY.equalsIgnoreCase(actionName))
-        {
+        } else if (ACTION_NAME_COMPARE_PARSIMONY.equalsIgnoreCase(actionName)) {
             result = new CompareExpParsimonyActionBuilder();
         }
 
