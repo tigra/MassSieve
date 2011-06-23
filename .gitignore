@@ -2,3 +2,4 @@
 /MassSieve-gui/build/*
 /MassSieve-core/target/
 /MassSieve-gui/nbproject/private/
+/*/target/*
