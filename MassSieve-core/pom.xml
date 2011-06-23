@@ -89,5 +89,12 @@
 			<artifactId>antlr</artifactId>
 			<version>2.7.7</version>
 		</dependency>
+		<dependency>
+			<groupId>ca.odell</groupId>
+			<artifactId>glazedlists</artifactId>
+			<version>0.9.7</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
 	</dependencies>
 </project>

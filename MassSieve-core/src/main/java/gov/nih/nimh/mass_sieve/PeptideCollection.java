@@ -7,7 +7,7 @@
  */
 package gov.nih.nimh.mass_sieve;
 
-import gov.nih.nimh.mass_sieve.gui.PeptideCollectionView;
+//import gov.nih.nimh.mass_sieve.gui.PeptideCollectionView;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +18,12 @@ import java.util.Set;
 
 public class PeptideCollection implements Serializable, Comparable<PeptideCollection> {
 
-    private HashMap<String, Peptide> minPeptides;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -4159432020729059134L;
+	
+	private HashMap<String, Peptide> minPeptides;
     private HashMap<String, Protein> minProteins;
     private HashMap<Integer, PeptideCollection> clusters;
     private HashSet<String> experimentSet;
@@ -27,7 +32,7 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
     private int cluster_num;
     private Integer countablesCount;
 
-    private transient PeptideCollectionView view; // TODO: probably model shouldn't depent on view.
+    //private transient PeptideCollectionView view; // TODO: probably model shouldn't depent on view.
 
     /** Creates a new instance of PeptideCollection */
     public PeptideCollection() {
@@ -41,12 +46,13 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
     /**
      * @return object resporsible for different views of this peptide collection.
      */
-    public PeptideCollectionView getView() {
-        if (null == view) {
-            view = new PeptideCollectionView(this);
-        }
-        return view;
-    }
+    //TODO make a factory method in view part
+//    public PeptideCollectionView getView() {
+//        if (null == view) {
+//            view = new PeptideCollectionView(this);
+//        }
+//        return view;
+//    }
 
     public void addPeptideHit(PeptideHit p) {
         if (p == null) {

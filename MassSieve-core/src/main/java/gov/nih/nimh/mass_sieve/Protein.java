@@ -30,7 +30,12 @@ import org.biojavax.bio.seq.RichSequence;
 
 public class Protein implements Serializable, Comparable<Protein> {
 
-    private String name;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -7360463538245984462L;
+	
+	private String name;
     //private String id;
     private String description;
     private double mass;
