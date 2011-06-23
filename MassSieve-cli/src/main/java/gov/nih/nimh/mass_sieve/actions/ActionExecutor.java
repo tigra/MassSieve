@@ -1,4 +1,4 @@
-package gov.nih.nimh.mass_sieve.logic;
+package gov.nih.nimh.mass_sieve.actions;
 
 import gov.nih.nimh.mass_sieve.PeptideCollection;
 import gov.nih.nimh.mass_sieve.actions.MergeAction;
@@ -9,6 +9,11 @@ import gov.nih.nimh.mass_sieve.ExportProteinType;
 import gov.nih.nimh.mass_sieve.actions.CompareExpDiffAction;
 import gov.nih.nimh.mass_sieve.actions.CompareExpParsimonyAction;
 import gov.nih.nimh.mass_sieve.actions.ExternalAction;
+import gov.nih.nimh.mass_sieve.logic.ActionResult;
+import gov.nih.nimh.mass_sieve.logic.CompareExperimentDiffData;
+import gov.nih.nimh.mass_sieve.logic.DataStoreException;
+import gov.nih.nimh.mass_sieve.logic.ExperimentManager;
+import gov.nih.nimh.mass_sieve.logic.ExperimentsBundle;
 import gov.nih.nimh.mass_sieve.util.LogStub;
 import java.io.File;
 import java.util.ArrayList;
