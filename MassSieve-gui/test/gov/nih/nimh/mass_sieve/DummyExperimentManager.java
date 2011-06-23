@@ -85,4 +85,21 @@ public class DummyExperimentManager {
     public ProteinDB getProteinDatabase() {
         return man.getProteinDatabase();
     }
+
+    /**
+     * Imports data files
+     * @param files
+     * @param expData
+     * @return
+     */
+    // TODO write test for this method, as we rely on it in other tests
+    protected ProteinDB importData(File[] files,
+                                   ExperimentData expData) {
+        for (File f : files) {
+            addFilesToExperiment(expData, f);
+        }
+        recomputeCutoff(expData);
+
+        return getProteinDatabase();
+    }
 }

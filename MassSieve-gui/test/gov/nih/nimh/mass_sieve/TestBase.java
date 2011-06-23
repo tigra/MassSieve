@@ -1,6 +1,5 @@
 package gov.nih.nimh.mass_sieve;
 
-import java.util.Map;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,12 +39,4 @@ public class TestBase {
         return result.toArray(new File[result.size()]);
     }
 
-    protected ProteinDB importData(File[] files, DummyExperimentManager man, ExperimentData expData) {
-        for (File f : files) {
-            man.addFilesToExperiment(expData, f);
-        }
-        man.recomputeCutoff(expData);
-
-        return man.getProteinDatabase();
-    }
 }

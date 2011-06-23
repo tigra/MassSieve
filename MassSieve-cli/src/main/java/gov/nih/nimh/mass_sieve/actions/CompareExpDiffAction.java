@@ -1,5 +1,8 @@
 package gov.nih.nimh.mass_sieve.actions;
 
+import gov.nih.nimh.mass_sieve.logic.*;
+import gov.nih.nimh.mass_sieve.util.LogStub;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,5 +42,24 @@ public class CompareExpDiffAction extends ExternalAction {
 
     public String getFilename() {
         return exportFilename;
+    }
+
+    public ActionResult perform() {
+        ExperimentManager man = new ExperimentManager();
+        List<File> expFiles = getExperimentFiles();
+
+        try {
+            List<ExperimentsBundle> bundles = new ArrayList<ExperimentsBundle>();
+            for (File f : expFiles) {
+                ExperimentsBundle eb = man.loadExperimentsBundle(f);
+                bundles.add(eb);
+            }
+            CompareExperimentDiffData diffData = man.compareExperimentDiff(bundles);
+            man.exportCompareExperimentDiffData(getFilename(), diffData);
+        } catch (DataStoreException e) {
+            LogStub.error(e);
+            return ActionResult.FAILED;
+        }
+        return ActionResult.SUCCESS;
     }
 }

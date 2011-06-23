@@ -20,7 +20,7 @@ public class ExportExperimentsDatabaseTest extends TestBase {
         expData.setFilterSettings(new FilterSettings());
 
         File[] files = getSeqFiles();
-        importData(files, man, expData);
+        man.importData(files, expData, ExportExperimentsDatabaseTest.this);
     }
 
     @Test
