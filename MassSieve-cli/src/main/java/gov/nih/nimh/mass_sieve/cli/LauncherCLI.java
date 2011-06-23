@@ -1,16 +1,13 @@
 package gov.nih.nimh.mass_sieve.cli;
 
-<<<<<<< HEAD
+
+
 import gov.nih.nimh.mass_sieve.actions.CompareExpParsimonyActionBuilder;
 import gov.nih.nimh.mass_sieve.actions.ExternalAction;
-//import gov.nih.nimh.mass_sieve.logic.ActionExecutor;
 import gov.nih.nimh.mass_sieve.actions.ActionExecutor;
 import gov.nih.nimh.mass_sieve.actions.MergeActionBuilder;
 import gov.nih.nimh.mass_sieve.actions.ActionBuilder;
 import gov.nih.nimh.mass_sieve.actions.CompareExpDiffActionBuilder;
-=======
-import gov.nih.nimh.mass_sieve.actions.*;
->>>>>>> tigra/master
 import gov.nih.nimh.mass_sieve.logic.ActionResult;
 import gov.nih.nimh.mass_sieve.util.LogStub;
 import org.apache.commons.cli.*;
