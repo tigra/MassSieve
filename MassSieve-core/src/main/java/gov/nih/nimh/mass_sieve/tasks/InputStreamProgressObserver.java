@@ -13,7 +13,6 @@ public class InputStreamProgressObserver implements InputStreamObserver {
         this.listener = listener;
     }
 
-    @Override
     public void onRead(long totalBytesRead) throws InterruptedIOException {
         listener.onProgress((int) totalBytesRead);
     }

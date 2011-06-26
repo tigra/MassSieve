@@ -471,7 +471,6 @@ public class ExperimentManager {
         saveExperimentsBundle(bundle, file);
     }
 
-    // TODO move to ExternalAction ???
     public CompareExperimentDiffData compareExperimentDiff(List<ExperimentsBundle> bundles) {
         List<String> experimentsNames = new ArrayList<String>();
         HashSet<String> uniqueProteins = new HashSet<String>();

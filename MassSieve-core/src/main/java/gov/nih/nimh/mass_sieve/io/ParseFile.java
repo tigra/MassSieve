@@ -7,7 +7,7 @@
  */
 package gov.nih.nimh.mass_sieve.io;
 
-import be.proteomics.mascotdatfile.util.mascot.MascotDatfile;
+import com.compomics.mascotdatfile.util.mascot.MascotDatfile;
 import gov.nih.nimh.mass_sieve.PeptideHit;
 import gov.nih.nimh.mass_sieve.ProteinInfo;
 import gov.nih.nimh.mass_sieve.tasks.DeterminedTaskListener;

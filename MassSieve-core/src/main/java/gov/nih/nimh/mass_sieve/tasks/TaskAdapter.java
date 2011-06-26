@@ -17,29 +17,24 @@ public class TaskAdapter implements TaskListener {
         this.parent = parent;
     }
 
-    @Override
     public void onTaskStarted(String taskName, int taskSize) {
         mon = new ProgressMonitor(parent, "Loading " + taskName, "", 0, taskSize);
         parent.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
     }
 
-    @Override
     public void onProgress(int taskStep) throws InterruptedIOException {
         checkMonitorCancelled();
         mon.setProgress(taskStep);
     }
 
-    @Override
     public void onTaskFinished() {
         parent.setCursor(null);
     }
 
-    @Override
     public void onTaskCancelled() {
         parent.setCursor(null);
     }
 
-    @Override
     public void onTaskFailed() {
         parent.setCursor(null);
     }
