@@ -3,6 +3,8 @@ package gov.nih.nimh.mass_sieve;
 import gov.nih.nimh.mass_sieve.logic.DataStoreException;
 import gov.nih.nimh.mass_sieve.logic.ExperimentsBundle;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ public class PersistExperimentTest extends TestBase {
 	}
 
 	@Test
-	public void testSaveExperiment() throws DataStoreException {
+	public void testSaveExperiment() throws DataStoreException, FileNotFoundException, IOException {
 		ExperimentData exp1 = createExperiment("test_1");
 		ExperimentData exp2 = createExperiment("test_2");
 
@@ -51,7 +53,7 @@ public class PersistExperimentTest extends TestBase {
 		assertTrue("Loaded empty protein database.", !proteinDB.isEmpty());
 	}
 
-	private ExperimentData createExperiment(String expName) {
+	private ExperimentData createExperiment(String expName) throws FileNotFoundException, IOException {
 		File[] files = getSeqFiles();
 		ExperimentData expData = man.createNewExperiment(expName);
 		expData.setFilterSettings(new FilterSettings());

@@ -2,6 +2,8 @@ package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.logic.ActionResponse;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -16,7 +18,7 @@ public class ExportExperimentsResultsTest extends TestBase {
     private ExperimentData expData;
 
     @Before
-    public void setUp() {
+    public void setUp() throws FileNotFoundException, IOException {
         man = new DummyExperimentManager();
         expData = man.createNewExperiment("test");
         expData.setFilterSettings(new FilterSettings());

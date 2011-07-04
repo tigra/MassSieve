@@ -2,6 +2,8 @@ package gov.nih.nimh.mass_sieve;
 
 import gov.nih.nimh.mass_sieve.io.FileInformation;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +26,7 @@ public class AddSearchResultsTest extends TestBase {
     }
 
     @Test
-    public void testAddSearchResults_NewExperiment() {
+    public void testAddSearchResults_NewExperiment() throws FileNotFoundException, IOException {
         File[] inFiles = getSeqFiles(); //TODO Replace with a reference to a real file
         ExperimentData experimentData = createExperiment();
         ProteinDB loadedProteins = man.importData(inFiles, experimentData);
@@ -45,7 +47,7 @@ public class AddSearchResultsTest extends TestBase {
     }
 
     @Test
-    public void testAddSearchResults_ExistingExperiment() {
+    public void testAddSearchResults_ExistingExperiment() throws FileNotFoundException, IOException {
         // create new experiment and populate it with some results.
         File[] initFiles = getSeqFiles();
         ExperimentData expData = createExperiment();

@@ -104,7 +104,7 @@
 		<dependency>
 			<groupId>commons-vfs</groupId>
 			<artifactId>commons-vfs</artifactId>
-			<version>1.0</version>
+			<version>20050307052300</version>
 			<type>jar</type>
 			<scope>test</scope>
 		</dependency>
