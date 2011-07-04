@@ -19,6 +19,8 @@ public class TestBase {
      */
     protected File[] getSeqFiles(String... requiredFiles) {
         List<File> result = new ArrayList<File>();
+        
+        
 
         // add files to a list
         if (null == requiredFiles || requiredFiles.length == 0) {

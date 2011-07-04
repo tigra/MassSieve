@@ -11,56 +11,55 @@ import org.junit.*;
 import static org.junit.Assert.*;
 
 /**
- *
+ * 
  * @author Alex Turbin (alex.academATgmail.com)
  */
 public class PersistExperimentTest extends TestBase {
 
-    private DummyExperimentManager man;
+	private DummyExperimentManager man;
 
-    @Before
-    public void setUp() {
-        man = new DummyExperimentManager();
-    }
+	@Before
+	public void setUp() {
+		man = new DummyExperimentManager();
+	}
 
-    @Test
-    public void testSaveExperiment() throws DataStoreException {
-        ExperimentData exp1 = createExperiment("test_1");
-        ExperimentData exp2 = createExperiment("test_2");
+	@Test
+	public void testSaveExperiment() throws DataStoreException {
+		ExperimentData exp1 = createExperiment("test_1");
+		ExperimentData exp2 = createExperiment("test_2");
 
-        List<Experiment> experiments = new ArrayList<Experiment>();
-        experiments.add(man.getPersistentExperiment(exp1));
-        experiments.add(man.getPersistentExperiment(exp2));
-        ExperimentsBundle eb = new ExperimentsBundle(experiments, man.getProteinDatabase());
+		List<Experiment> experiments = new ArrayList<Experiment>();
+		experiments.add(man.getPersistentExperiment(exp1));
+		experiments.add(man.getPersistentExperiment(exp2));
+		ExperimentsBundle eb = new ExperimentsBundle(experiments, man.getProteinDatabase());
 
-        String outFileName = "save_experiments.bin";
-        File outFile = new File(TestConstants.DIR_OUT, outFileName);
-        man.saveExperimentsBundle(eb, outFile);
-    }
+		String outFileName = "save_experiments.bin";
+		File outFile = new File(TestConstants.DIR_OUT, outFileName);
+		man.saveExperimentsBundle(eb, outFile);
+	}
 
-    @Test
-    public void testLoadExperiment() throws DataStoreException {
-        File expFile = new File(TestConstants.DIR_DATA, "load_experiments.bin");
-        assertTrue("Test file must exist: " + expFile.getAbsolutePath(), expFile.exists());
+	@Test
+	public void testLoadExperiment() throws DataStoreException {
+		File expFile = new File(TestConstants.DIR_DATA, "load_experiments.bin");
+		assertTrue("Test file must exist: " + expFile.getAbsolutePath(), expFile.exists());
 
-        ExperimentsBundle eb = man.loadExperimentsBundle(expFile);
-        List<Experiment> experiments = eb.getExperiments();
-        ProteinDB proteinDB = eb.getProteinDB();
+		ExperimentsBundle eb = man.loadExperimentsBundle(expFile);
+		List<Experiment> experiments = eb.getExperiments();
+		ProteinDB proteinDB = eb.getProteinDB();
 
-        assertTrue("Loaded empty experiments file.", !experiments.isEmpty());
-        assertTrue("Loaded empty protein database.", !proteinDB.isEmpty());
-    }
+		assertTrue("Loaded empty experiments file.", !experiments.isEmpty());
+		assertTrue("Loaded empty protein database.", !proteinDB.isEmpty());
+	}
 
-    private ExperimentData createExperiment(String expName) {
-        File[] files = getSeqFiles();
-        ExperimentData expData = man.createNewExperiment(expName);
-        expData.setFilterSettings(new FilterSettings());
+	private ExperimentData createExperiment(String expName) {
+		File[] files = getSeqFiles();
+		ExperimentData expData = man.createNewExperiment(expName);
+		expData.setFilterSettings(new FilterSettings());
 
-        for (File f : files) {
-            man.addFilesToExperiment(expData, f);
-        }
+		for (File f : files) {
+			man.addFilesToExperiment(expData, f);
+		}
 
-
-        return expData;
-    }
+		return expData;
+	}
 }
