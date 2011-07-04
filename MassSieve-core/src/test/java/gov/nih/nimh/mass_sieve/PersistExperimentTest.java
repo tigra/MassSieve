@@ -56,11 +56,10 @@ public class PersistExperimentTest extends TestBase {
         ExperimentData expData = man.createNewExperiment(expName);
         expData.setFilterSettings(new FilterSettings());
 
-        //TODO: test MUSTN'T call recomputeCutoff !
         for (File f : files) {
             man.addFilesToExperiment(expData, f);
         }
-        man.recomputeCutoff(expData);
+
 
         return expData;
     }

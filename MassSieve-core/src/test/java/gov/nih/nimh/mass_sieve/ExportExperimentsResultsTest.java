@@ -22,7 +22,7 @@ public class ExportExperimentsResultsTest extends TestBase {
         expData.setFilterSettings(new FilterSettings());
 
         File[] files = getSeqFiles();
-        man.importData(files, expData, ExportExperimentsResultsTest.this);
+        man.importData(files, expData);
     }
 
     @Test
