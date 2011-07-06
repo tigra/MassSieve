@@ -3,6 +3,9 @@
 	<name>MassSieve</name>
 	<comment></comment>
 	<projects>
+		<project>masssieve-cli</project>
+		<project>MassSieve-core</project>
+		<project>masssieve-web</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
