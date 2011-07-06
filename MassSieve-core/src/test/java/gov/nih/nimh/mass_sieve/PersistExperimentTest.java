@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -43,7 +42,6 @@ public class PersistExperimentTest extends TestBase {
 	}
 
 	@Test
-	@Ignore("Until we get real load_experiments.bin file")
 	public void testLoadExperiment() throws DataStoreException {
 		final File expFile = new File(TestConstants.DIR_DATA, "load_experiments.bin.gz");
 		assertTrue("Test file must exist: " + expFile.getAbsolutePath(), expFile.exists());
