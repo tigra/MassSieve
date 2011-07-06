@@ -29,7 +29,7 @@ import org.biojava.bio.symbol.SymbolPropertyTable;
 import org.biojava.utils.ChangeVetoException;
 import org.biojavax.bio.seq.RichSequence;
 
-import ca.odell.glazedlists.EventList;
+//import ca.odell.glazedlists.EventList;
 
 public class Protein implements Serializable, Comparable<Protein> {
 
