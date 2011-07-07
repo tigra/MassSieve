@@ -28,11 +28,11 @@
 
         </repository>
                 
-<!--        <repository>
+       <repository>
             <id>ibiblio-maveb2-repo</id>
             <name>Ibiblio maven2 repo</name>
             <url>http://mirrors.ibiblio.org/pub/mirrors/maven2</url>
-        </repository>-->
+        </repository>
     </repositories>
         
 
@@ -59,8 +59,8 @@
     </dependencies>
 
     <modules>
-        <module>MassSieve-cli</module>
         <module>MassSieve-core</module>
+        <module>MassSieve-cli</module>
         <module>MassSieve-desktop</module>
         <module>masssieve-web</module>
 

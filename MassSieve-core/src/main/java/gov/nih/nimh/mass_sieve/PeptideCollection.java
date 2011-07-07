@@ -32,9 +32,6 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
 	private int cluster_num;
 	private Integer countablesCount;
 
-	// private transient PeptideCollectionView view; // TODO: probably model
-	// shouldn't depent on view.
-
 	/** Creates a new instance of PeptideCollection */
 	public PeptideCollection() {
 		peptideHits = new ArrayList<PeptideHit>();
@@ -43,18 +40,6 @@ public class PeptideCollection implements Serializable, Comparable<PeptideCollec
 		cluster_num = -1;
 		countablesCount = null;
 	}
-
-	/**
-	 * @return object resporsible for different views of this peptide
-	 *         collection.
-	 */
-	// TODO make a factory method in view part
-	// public PeptideCollectionView getView() {
-	// if (null == view) {
-	// view = new PeptideCollectionView(this);
-	// }
-	// return view;
-	// }
 
 	public void addPeptideHit(final PeptideHit p) {
 		if (p == null) {
