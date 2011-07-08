@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -21,26 +19,6 @@ public class CLIMergeTest extends CLITestBase {
 	private final String outputExportPreferredFilename = "./" + TestConstantsCli.DIR_OUT + "/" + "cli_MT_export_pref";
 	private final String outputExperimentFilename = "./" + TestConstantsCli.DIR_OUT + "/" + "cli_MT_experiment";
 	private File outputDir;
-	private boolean outputDirCreated = false;
-
-	@Before
-	public void setUp() {
-		outputDir = new File(TestConstantsCli.DIR_OUT);
-
-		deleteResultingTestFiles();
-		if (!outputDir.exists()) {
-			outputDir.mkdir();
-			outputDirCreated = true;
-		}
-	}
-
-	@After
-	public void tearDown() {
-		// deleteResultingTestFiles();
-		if (outputDirCreated) {
-			outputDir.delete();
-		}
-	}
 
 	private void deleteResultingTestFiles() {
 		deleteFileIfExists(outputExportDatabaseFilename);
