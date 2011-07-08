@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 
 import org.biojava.bio.BioException;
 import org.biojava.bio.proteomics.IsoelectricPointCalc;
@@ -29,7 +30,7 @@ import org.biojava.bio.symbol.SymbolPropertyTable;
 import org.biojava.utils.ChangeVetoException;
 import org.biojavax.bio.seq.RichSequence;
 
-import ca.odell.glazedlists.EventList;
+//import ca.odell.glazedlists.EventList;
 
 public class Protein implements Serializable, Comparable<Protein> {
 
@@ -676,7 +677,9 @@ public class Protein implements Serializable, Comparable<Protein> {
 		return mostEquivalent;
 	}
 
-	public void setMostEquivalent(final boolean isMost, final EventList list) {
+	// TODO seems like this method is called only from itself..
+
+	public void setMostEquivalent(final boolean isMost, final List<Protein> list) {
 		mostEquivalent = isMost;
 		final int loc = list.indexOf(this);
 		list.set(loc, this);
