@@ -171,10 +171,19 @@ public class PeptideHit implements Serializable, Comparable<PeptideHit> {
         return p.getSequence().equals(sequence)
                 && p.getScanNum() == scanNum
                 && p.getQueryNum() == queryNum
-                && p.getSourceType().equals(sourceType)
-                && p.getSourceFile().equals(sourceFile)
-                && p.getExperiment().equals(experiment)
+                && equalz(p.getSourceType(), sourceType)
+                && equalz(p.getSourceFile(), sourceFile)
+                && equalz(p.getExperiment(), experiment)
                 && p.getCharge() == Z;
+    }
+
+
+    public <T> boolean equalz(T a, T b) {
+        if (a == null) {
+            return b == null;
+        } else {
+            return a.equals(b);
+        }
     }
 
     @Override
