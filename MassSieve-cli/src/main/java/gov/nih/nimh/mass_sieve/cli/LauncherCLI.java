@@ -2,6 +2,8 @@ package gov.nih.nimh.mass_sieve.cli;
 
 
 
+import gov.nih.nimh.mass_sieve.InvalidPeptideGroupException;
+import gov.nih.nimh.mass_sieve.InvalidSourceTypeException;
 import gov.nih.nimh.mass_sieve.actions.CompareExpParsimonyActionBuilder;
 import gov.nih.nimh.mass_sieve.actions.ExternalAction;
 import gov.nih.nimh.mass_sieve.actions.ActionExecutor;
@@ -30,6 +32,7 @@ public class LauncherCLI {
     private static final int CODE_SUCCESS = 0;
     private static final int CODE_UNSUCCESSFUL_EXECUTION = -1;
     private static final int CODE_UNEXPECTED_ERROR = -3;
+    private static final int CODE_KNOWN_ERROR = 1;
 
     static {
         cmdOptions = defineCommandLineOptions();
@@ -49,6 +52,12 @@ public class LauncherCLI {
             // LogStub.error(e);
             printHelp(e.getMessage());
             return CODE_BAD_COMMAND_LINE;
+        } catch (InvalidSourceTypeException iste) {
+            LogStub.error(iste);
+            return CODE_KNOWN_ERROR;
+        } catch (InvalidPeptideGroupException ipge) {
+            LogStub.error(ipge);
+            return CODE_KNOWN_ERROR;
         } catch (Throwable t) {
             LogStub.error(t);
             printHelp(null);
