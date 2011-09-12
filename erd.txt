@@ -1,0 +1,17 @@
+# Entity relationship diagram for MassSieve
+
+{title: "MassSieve ERD"}
+
+[PeptideCollection]
+*PeptideCollection ID
+ Something Else
+ 
+[Peptide Hit]
+*Peptide Hit ID
+ PeptideCollection ID*
+ SomePeptideStuff
+
+# Relationships
+
+[PeptideCollection] ---- [Peptide Hit]
+
